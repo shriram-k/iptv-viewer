@@ -1,7 +1,14 @@
 import logo from './logo.svg';
 import './App.css';
+import playlistParser from './helpers/playlistParser';
 
 function App() {
+
+  const parseplaylist = async () => {
+    const channels = await playlistParser();
+    console.log(channels)
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -17,6 +24,7 @@ function App() {
         >
           Learn React
         </a>
+        <button onClick={parseplaylist} >Run</button>
       </header>
     </div>
   );
