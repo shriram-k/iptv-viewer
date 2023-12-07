@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  min-height: 100vh;
 }
 
 .App-logo {
@@ -34,5 +35,22 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+.SplashScreen {
+  background-color: antiquewhite;
+}
+
+/* .logo {
+  animation: logo-zoom 3s linear;
+} */
+
+@keyframes logo-zoom {
+  0% {
+    font-size: 24px;
+  }
+  100% {
+    font-size: 42px;
   }
 }

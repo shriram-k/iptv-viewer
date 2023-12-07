@@ -1,5 +1,6 @@
-const DEFAULT_PLAYLIST = 'https://iptv-org.github.io/iptv/index.nsfw.m3u';
+const {writeFile} = require('fs');
 
+const DEFAULT_PLAYLIST = 'https://iptv-org.github.io/iptv/index.nsfw.m3u';
 
 const getCountryName = (data) => {
     try {
@@ -8,12 +9,12 @@ const getCountryName = (data) => {
         }
         const index = data.indexOf('.')
         let countryCode = data.slice(index + 1, index + 3).toUpperCase()
-        let regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
-        let countryName =  regionNames.of(countryCode).replaceAll('"', '');
+        // let regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+        // let countryName =  regionNames.of(countryCode).replaceAll('"', '');
         if(countryCode === 'UK') {
             countryCode = 'GB'
         }
-        return {name: countryName, code: countryCode};
+        return {code: countryCode};
     }catch (e) {
         console.debug(e)
         return ''
@@ -83,17 +84,18 @@ const playlistParser = async (url=DEFAULT_PLAYLIST) => {
         const logo = getLogo(preprocessedChannelData[2])
         const name = getName(preprocessedChannelData[3])
         const categories = getCategories(preprocessedChannelData[3])
-        // if(idx === 9265) { //name issue 9266 9265
-        //     console.log(idx + ': ')
-        //     console.log(preprocessedChannelData)
-        //     console.log(preprocessedChannelData[3].split(','))
-        //     console.log('-------------------------------------------------------')
-        //     console.log({splitData, url, channelData, preprocessedChannelData, country, logo, name, categories})
-        // }
         
         channels.push({id: idx, url, country, logo, name, group: categories})
     });
     return channels;
 }
 
-export default playlistParser
+playlistParser().then((playlist) => {
+    writeFile('./playlist.json', JSON.stringify(playlist, null, 2), (error) => {
+        if (error) {
+          console.log('An error has occurred ', error);
+          return;
+        }
+        console.log('Data written successfully to disk');
+      });
+});
