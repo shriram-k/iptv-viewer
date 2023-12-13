@@ -1,8 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import './App.css';
 import playlistParser from './helpers/playlistParser';
-import countryHelper from './helpers/countryHelper';
-import groupHelper from './helpers/groupHelper';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './screens/Home';
 import Search from './screens/Search';
@@ -20,11 +18,9 @@ function App() {
 
   const parsePlaylist = async () => {
     const channelData = await playlistParser()
-    const countryData = countryHelper(channelData);
-    const groupData = groupHelper(channelData)
-    setChannels(channelData)
-    setCountries(countryData)
-    setGroups(groupData)
+    setChannels(channelData.channels)
+    setCountries(channelData.countries)
+    setGroups(channelData.categories)
     setShowSplashScreen(false);
   }
 

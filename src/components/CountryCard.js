@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 
 const CountryCard = ({country}) => {
     const navigate = useNavigate();
+    
     const handleOnClick = () => {
         navigate(`/channels?country=${country.code}`);
     }

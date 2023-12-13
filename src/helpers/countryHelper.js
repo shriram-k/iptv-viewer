@@ -1,10 +1,13 @@
 const countryHelper = (channels) => {
     let countries = [];
     channels.forEach((eachChannel) => {
-        const index = countries.findIndex((eachCountry) => eachCountry.name === eachChannel.country.name)
+        const index = countries.findIndex((eachCountry) => eachCountry.code === eachChannel.country.code)
         
-        if(index < 0 && eachChannel.country !== "") {
-            countries.push(eachChannel.country);
+        if(index < 0 && eachChannel.country.code !== "") {
+            let regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+            let countryName =  regionNames.of(eachChannel.country.code)
+            let country = {...eachChannel.country, name: countryName};
+            countries.push(country);
         }
     })
     return countries.sort((a, b) => {

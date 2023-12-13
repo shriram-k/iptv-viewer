@@ -1,4 +1,5 @@
 const {writeFile} = require('fs');
+const {getName} = require('country-list');
 
 const DEFAULT_PLAYLIST = 'https://iptv-org.github.io/iptv/index.nsfw.m3u';
 
@@ -8,9 +9,7 @@ const getCountryName = (data) => {
             return ''
         }
         const index = data.indexOf('.')
-        let countryCode = data.slice(index + 1, index + 3).toUpperCase()
-        // let regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
-        // let countryName =  regionNames.of(countryCode).replaceAll('"', '');
+        let countryCode = data.slice(index + 1, index + 3).toUpperCase().replaceAll('"', '');
         if(countryCode === 'UK') {
             countryCode = 'GB'
         }
@@ -31,7 +30,7 @@ const getLogo = (data) => {
     }
 }
 
-const getName = (data) => {
+const getChannelName = (data) => {
     try {
         const namePreProcessed = data.split(',')
         return namePreProcessed[namePreProcessed.length - 1]
@@ -42,7 +41,7 @@ const getName = (data) => {
     
 }
 
-const getCategories = (data) => {
+const getChannelCategories = (data) => {
     try {
         let preprocessedGroup = data.split(',')[0];
         preprocessedGroup = preprocessedGroup.split("user-agent")[0];
@@ -82,16 +81,55 @@ const playlistParser = async (url=DEFAULT_PLAYLIST) => {
         const preprocessedChannelData = channelData.replace('tvg-id=', '@').replace(' tvg-logo=', '@').replace(' group-title=', '@').split('@');
         const country = getCountryName(preprocessedChannelData[1])
         const logo = getLogo(preprocessedChannelData[2])
-        const name = getName(preprocessedChannelData[3])
-        const categories = getCategories(preprocessedChannelData[3])
+        const name = getChannelName(preprocessedChannelData[3])
+        const categories = getChannelCategories(preprocessedChannelData[3])
         
         channels.push({id: idx, url, country, logo, name, group: categories})
     });
     return channels;
 }
 
+const getCategories = (channels) => {
+    let group = [];
+    channels.forEach((eachChannel) => {
+        eachChannel.group.forEach((eachGroup) => {
+            if(!group.includes(eachGroup) && eachGroup !== "") {
+                group.push(eachGroup)
+            }
+        })
+    })
+    return group.sort();
+}
+
+const getCountries = (channels) => {
+    let countries = [];
+    channels.forEach((eachChannel) => {
+        const index = countries.findIndex((eachCountry) => eachCountry.code === eachChannel.country.code)
+        
+        if(index < 0 && eachChannel.country.code !== "") {
+            let countryName =  getName(eachChannel.country.code)
+            let country = {...eachChannel.country, name: countryName};
+            countries.push(country);
+        }
+    })
+    return countries.sort((a, b) => {
+        if ( a.name < b.name ){
+            return -1;
+        }
+        if ( a.name > b.name ){
+        return 1;
+        }
+        return 0;
+    });
+}
+
 playlistParser().then((playlist) => {
-    writeFile('./playlist.json', JSON.stringify(playlist, null, 2), (error) => {
+    // get countries.
+    const countries = getCountries(playlist);
+    // get categories.
+    const categories = getCategories(playlist);
+    const toWrite = {channels: playlist, countries, categories}
+    writeFile('./playlist.json', JSON.stringify(toWrite, null, 2), (error) => {
         if (error) {
           console.log('An error has occurred ', error);
           return;

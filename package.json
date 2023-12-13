@@ -41,6 +41,7 @@
     ]
   },
   "devDependencies": {
+    "country-list": "^2.3.0",
     "video.js": "^8.6.1"
   }
 }
