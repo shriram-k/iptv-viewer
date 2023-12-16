@@ -1,12 +1,12 @@
 import React, {useState, useEffect} from "react";
 import Wrapper from "../components/Wrapper";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import useAppWide from "../providers/appWide/hook";
+import ChannelCard from "../components/ChannelCard";
 
 const Channels = () => {
     const {state: {channels: channelData}} = useAppWide();
     let [searchParams] = useSearchParams();
-    const navigate = useNavigate();
     const [channels, setChannels] = useState([]);
 
     const getChannelsForCountry = (data, filter)  => {
@@ -20,17 +20,12 @@ const Channels = () => {
     const getChannels = () => {
         const country = searchParams.get('country');
         const category = searchParams.get('category');
-        console.log({category, country});
         if(country && !category) {
             setChannels(getChannelsForCountry(channelData, country));
         }
         if(category && !country) {
             setChannels(getChannelsForCategory(channelData, category));
         }
-    }
-
-    const gotoPlayer = (id) => {
-        navigate(`/tvplayer?channelId=${id}`)
     }
 
     useEffect(() => {
@@ -48,25 +43,7 @@ const Channels = () => {
             marginTop: '20px',}} >
             {
                 channels.map((eachChannel, idx) => (
-                        <div style={{
-                            width: '250px',
-                            height: '100px',
-                            display: 'flex', 
-                            flexDirection: 'row',
-                            boxShadow: '0px 0px 6px 0px lightgray',
-                            borderRadius: '4px',
-                            margin: '10px',
-                            cursor: 'pointer',
-                        }} key={idx} onClick={() => gotoPlayer(eachChannel.id)} >
-                            <div style={{flex: 1, alignItems: 'center', justifyContent: 'center', display: 'flex'}}>
-                                <img style={{maxWidth: 80, maxHeight: 80}} src={eachChannel.logo} alt={eachChannel.name} />
-                            </div>
-                            <div style={{flex: 1, padding: '5px', fontSize: '0.8rem'}} >
-                                <div style={{}}>{eachChannel.name}</div>
-                                <div style={{fontWeight: 600, marginTop: '5px'}} >Genre:</div>
-                                <div>{eachChannel.group.join(', ')}</div>
-                            </div>
-                        </div>
+                        <ChannelCard key={idx} channel={eachChannel} />
                     )
                 )
             }

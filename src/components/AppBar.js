@@ -20,7 +20,7 @@ const AppBar = () => {
             </Link>
             <ul id='navigation' style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}} >
                 <li id='search' style={{listStyle: 'none'}}>
-                    {/* <Link to={'/search'} style={{textDecoration: 'none', color: '#000', fontSize: 16}} ><FaSearch style={{marginRight: '5px', fontSize: 10}} />Search</Link> */}
+                    <Link to={'/search'} style={{textDecoration: 'none', color: '#000', fontSize: 16}} ><FaSearch style={{marginRight: '5px', fontSize: 10}} />Search</Link>
                 </li>
             </ul>
         </nav>
