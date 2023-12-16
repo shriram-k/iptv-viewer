@@ -1,8 +1,10 @@
 import React, {useState, useEffect} from "react";
 import Wrapper from "../components/Wrapper";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import useAppWide from "../providers/appWide/hook";
 
-const Channels = ({channels: channelData}) => {
+const Channels = () => {
+    const {state: {channels: channelData}} = useAppWide();
     let [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [channels, setChannels] = useState([]);

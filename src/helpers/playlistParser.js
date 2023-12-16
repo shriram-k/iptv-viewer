@@ -16,7 +16,6 @@ const playlistParser = async () => {
     }catch(e) {
         rawData = jsdata
     }
-    console.log({rawData})
     return rawData;
 }
 

@@ -1,63 +1,63 @@
-import React, {useState, useEffect} from 'react';
+import React, { useEffect, useCallback} from 'react';
 import './App.css';
 import playlistParser from './helpers/playlistParser';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './screens/Home';
 import Search from './screens/Search';
 import Country from './screens/Country';
-import Group from './screens/Group';
+import Category from './screens/Category';
 import Player from './screens/Player';
 import SplashScreen from './screens/Splash';
 import Channels from './screens/Channels';
+import useAppWide from './providers/appWide/hook';
 
 function App() {
-  const [showSplashScreen, setShowSplashScreen] = useState(true);
-  const [channels, setChannels] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const {
+    state: {channels, showSplashScreen},
+    actions: {setChannels, setCountries, setCategories, setShowSplashScreen}
+  } = useAppWide();
 
-  const parsePlaylist = async () => {
+  const parsePlaylist = useCallback(async () => {
+    setShowSplashScreen(true);
     const channelData = await playlistParser()
     setChannels(channelData.channels)
     setCountries(channelData.countries)
-    setGroups(channelData.categories)
+    setCategories(channelData.categories)
     setShowSplashScreen(false);
-  }
+  }, [setCategories, setChannels, setCountries, setShowSplashScreen])
 
   useEffect(() => {
     if(channels.length < 1) {
-      setShowSplashScreen(true)
       parsePlaylist()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [channels, parsePlaylist])
 
   const App = () => {
 
     const routes = createBrowserRouter([
       {
         path: '/',
-        element: <Home countries={countries} groups={groups} />,
+        element: <Home />,
       },
       {
         path: '/search',
-        element: <Search channels={channels}/>,
+        element: <Search />,
       },
       {
         path: '/categories',
-        element: <Group channels={channels} />,
+        element: <Category />,
       },
       {
         path: '/countries',
-        element: <Country countries={countries} />,
+        element: <Country />,
       },
       {
         path: '/tvplayer',
-        element: <Player channels={channels} />,
+        element: <Player />,
       },
       {
         path: '/channels',
-        element: <Channels channels={channels} />
+        element: <Channels />
       }
     ])
 
@@ -69,7 +69,6 @@ function App() {
   return (
     <div>
       {showSplashScreen ? <SplashScreen /> : <App />}
-      {/* <App /> */}
     </div>
   );
 }

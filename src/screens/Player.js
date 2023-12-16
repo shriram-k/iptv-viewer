@@ -1,9 +1,11 @@
 import React, {useMemo} from "react";
 import { useSearchParams } from "react-router-dom";
+import useAppWide from "../providers/appWide/hook";
 import Wrapper from "../components/Wrapper";
 import VideoJS from "../components/VideoJS";
 
-const Player = ({channels}) => {
+const Player = () => {
+    const {state: {channels}} = useAppWide();
     let [searchParams] = useSearchParams();
     const playerRef = React.useRef(null);
     

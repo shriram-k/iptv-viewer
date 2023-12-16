@@ -1,10 +1,10 @@
 import React from "react";
 import useAppWide from "../providers/appWide/hook";
 import Wrapper from "../components/Wrapper";
-import CountryCard from "../components/CountryCard";
+import CategoryCard from "../components/CategoryCard";
 
-const Country = () => {
-    const {state: {countries}} = useAppWide();
+const Category = () => {
+    const {state: {categories}} = useAppWide();
     return (
     <Wrapper>
         <div style={{
@@ -16,11 +16,11 @@ const Country = () => {
             marginTop: '20px',
             }} >
             {
-                countries.map((eachCountry, idx) => <CountryCard key={idx} country={eachCountry}  />)
+                categories.map((eachCategory, idx) => <CategoryCard key={idx} category={eachCategory}  />)
             }
         </div>
     </Wrapper>
     )
 }
 
-export default Country;
+export default Category;

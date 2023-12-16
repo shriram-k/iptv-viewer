@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 const CategoryCard = ({category}) => {
     const navigate = useNavigate();
-
     const handleOnClick = () => {
         navigate(`/channels?category=${category}`)
     }
