@@ -51,7 +51,7 @@ const Player = () => {
                     justifyContent: 'space-evenly',
                     marginTop: '20px',
                     }} >
-                    <img loading="lazy" style={{maxWidth: 150, maxHeight: 150}} src={channel.logo} alt={channel.name} />
+                    <img loading="lazy" style={{maxWidth: 150, maxHeight: 80}} src={channel.logo} alt={channel.name} />
                     <div>{channel.name}</div>
                 </div>
             </div>
