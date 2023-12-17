@@ -5,16 +5,16 @@ const getDataFromGithub = async () => {
     if(data.status !== 200) {
         throw Error();
     }
-    return data.body;
+    return await data.json();
 }
 
 const playlistParser = async () => {
     let rawData = {};
     try {
         const resp = await getDataFromGithub();
-        return resp.json()
+        return resp;
     }catch(e) {
-        
+        console.error(e)
     }
     return rawData;
 }
