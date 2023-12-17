@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback} from 'react';
 import './App.css';
 import playlistParser from './helpers/playlistParser';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { RouterProvider, createHashRouter } from 'react-router-dom';
 import Home from './screens/Home';
 import Search from './screens/Search';
 import Country from './screens/Country';
@@ -34,7 +34,7 @@ function App() {
 
   const App = () => {
 
-    const routes = createBrowserRouter([
+    const routes = createHashRouter([
       {
         path: '/',
         element: <Home />,

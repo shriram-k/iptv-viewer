@@ -12,7 +12,8 @@ const getDataFromGithub = async () => {
 const playlistParser = async () => {
     let rawData = {};
     try {
-        rawData = await getDataFromGithub();
+        const resp = await getDataFromGithub();
+        return resp.json()
     }catch(e) {
         rawData = jsdata
     }
