@@ -4,11 +4,13 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import AppWideProvider from './providers/appWide/provider';
+import ScrollToTop from './components/ScrollToTop';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <AppWideProvider>
+      <ScrollToTop />
       <App />
     </AppWideProvider>
   </React.StrictMode>
