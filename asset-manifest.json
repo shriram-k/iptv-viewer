@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/iptv-viewer/static/css/main.e8d468fe.css",
-    "main.js": "/iptv-viewer/static/js/main.32d529b0.js",
+    "main.js": "/iptv-viewer/static/js/main.1fb7e61f.js",
     "static/js/787.25e8f45f.chunk.js": "/iptv-viewer/static/js/787.25e8f45f.chunk.js",
     "index.html": "/iptv-viewer/index.html",
     "main.e8d468fe.css.map": "/iptv-viewer/static/css/main.e8d468fe.css.map",
-    "main.32d529b0.js.map": "/iptv-viewer/static/js/main.32d529b0.js.map",
+    "main.1fb7e61f.js.map": "/iptv-viewer/static/js/main.1fb7e61f.js.map",
     "787.25e8f45f.chunk.js.map": "/iptv-viewer/static/js/787.25e8f45f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e8d468fe.css",
-    "static/js/main.32d529b0.js"
+    "static/js/main.1fb7e61f.js"
   ]
 }
