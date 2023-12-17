@@ -1,4 +1,3 @@
-import jsdata from './playlist.json';
 const URL = 'https://raw.githubusercontent.com/shriram-k/iptv-viewer/master/playlist.json';
 
 const getDataFromGithub = async () => {
@@ -15,7 +14,7 @@ const playlistParser = async () => {
         const resp = await getDataFromGithub();
         return resp.json()
     }catch(e) {
-        rawData = jsdata
+        
     }
     return rawData;
 }
