@@ -14,7 +14,7 @@ const Search = () => {
     
     const searchTextChangeHandler = (text) => {
         setFilteredViews([]);
-        setSearchText(text.trim().toLowerCase());
+        setSearchText(text);
     }
 
     const beginSearch = () => {
@@ -26,7 +26,7 @@ const Search = () => {
 
     const searchCountries = () => {
         const foundCountries = countries.filter(
-            (eachCountry) => eachCountry.name?.toLowerCase().includes(searchText)
+            (eachCountry) => eachCountry.name?.toLowerCase().includes(searchText.trim().toLowerCase())
         );
         
         return [...filteredViews, ...foundCountries.map((eachCountry) => <CountryCard key={eachCountry.name + eachCountry.id} country={eachCountry} />)];
@@ -34,7 +34,7 @@ const Search = () => {
 
     const searchChannels = () => {
         const foundChannels = channels.filter(
-            (eachChannel) => eachChannel.name?.toLowerCase().includes(searchText)
+            (eachChannel) => eachChannel.name?.toLowerCase().includes(searchText.trim().toLowerCase())
         );
         
         return [...filteredViews, ...foundChannels.map((eachChannel) => <ChannelCard key={eachChannel.name + eachChannel.id} channel={eachChannel} />)];
@@ -42,7 +42,7 @@ const Search = () => {
 
     const searchCategories = () => {
         const foundCategories = categories.filter(
-            (eachCategory) => eachCategory?.toLowerCase().includes(searchText)
+            (eachCategory) => eachCategory?.toLowerCase().includes(searchText.trim().toLowerCase())
         );
 
         return [...filteredViews, ...foundCategories.map((eachCategory) => <CategoryCard key={eachCategory} category={eachCategory} />)];
@@ -53,7 +53,7 @@ const Search = () => {
             if(searchText.length > 2) {
                 beginSearch();
             }
-        }, 5);
+        }, 500);
         return () => { clearTimeout(timeout) }
       // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [searchText])

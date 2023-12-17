@@ -10,6 +10,7 @@ import Player from './screens/Player';
 import SplashScreen from './screens/Splash';
 import Channels from './screens/Channels';
 import useAppWide from './providers/appWide/hook';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const {
@@ -62,7 +63,9 @@ function App() {
     ])
 
     return (
-      <RouterProvider router={routes} />
+      <RouterProvider router={routes} >
+        <ScrollToTop />
+      </RouterProvider>
     )
   }
 
