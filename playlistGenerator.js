@@ -1,7 +1,7 @@
 const {writeFile} = require('fs');
 const {getName} = require('country-list');
 
-const DEFAULT_PLAYLIST = 'https://iptv-org.github.io/iptv/index.nsfw.m3u';
+const DEFAULT_PLAYLIST = 'https://iptv-org.github.io/iptv/index.m3u';
 
 const getCountryName = (data) => {
     try {
