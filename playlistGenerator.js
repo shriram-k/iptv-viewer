@@ -14,6 +14,10 @@ const getCountryCode = (channel) => {
     return code
 }
 
+const capitalizeFirstLetter = (string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 const playlistParser = async () => {
     let rawStreams =  await (await fetch('https://iptv-org.github.io/api/streams.json')).json()
     let rawChannels = await (await fetch('https://iptv-org.github.io/api/channels.json')).json()
@@ -51,8 +55,8 @@ const playlistParser = async () => {
         }
 
         toAdd.group.forEach((eachGroup) => {
-            if(!categories.includes(eachGroup) && eachGroup !== "") {
-                categories.push(eachGroup)
+            if(!categories.includes(capitalizeFirstLetter(eachGroup)) && eachGroup !== "") {
+                categories.push(capitalizeFirstLetter(eachGroup))
             }
         })
         channels.push(toAdd)
