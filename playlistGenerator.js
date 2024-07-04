@@ -14,6 +14,13 @@ const getCountryCode = (channel) => {
     return code
 }
 
+const getCategories = (channel) => {
+    if(!channel.categories || channel.categories.length === 0) {
+        return ['General']
+    }
+    return channel.categories.map(eachCategory => capitalizeFirstLetter(eachCategory))
+}
+
 const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -39,6 +46,8 @@ const playlistParser = async () => {
             console.log(channel)
         }
 
+        const group = getCategories(channel)
+
         const toAdd =  {
             id: idx,
             url: eachStream.url,
@@ -47,7 +56,7 @@ const playlistParser = async () => {
             },
             logo: channel.logo || '',
             name: channel.name || '',
-            group: channel.categories.length > 0 ? channel.categories : ['general']
+            group
         }
 
         if(!countryCodes.includes(toAdd.country.code)) {
@@ -55,8 +64,8 @@ const playlistParser = async () => {
         }
 
         toAdd.group.forEach((eachGroup) => {
-            if(!categories.includes(capitalizeFirstLetter(eachGroup)) && eachGroup !== "") {
-                categories.push(capitalizeFirstLetter(eachGroup))
+            if(!categories.includes(eachGroup) && eachGroup !== "") {
+                categories.push(eachGroup)
             }
         })
         channels.push(toAdd)
