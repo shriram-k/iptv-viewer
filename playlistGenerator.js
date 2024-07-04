@@ -14,17 +14,6 @@ const getCountryCode = (channel) => {
     return code
 }
 
-const getCategories = (channel) => {
-    if(!channel.categories || channel.categories.length === 0) {
-        return ['General']
-    }
-    return channel.categories.map(eachCategory => capitalizeFirstLetter(eachCategory))
-}
-
-const capitalizeFirstLetter = (string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
 const playlistParser = async () => {
     let rawStreams =  await (await fetch('https://iptv-org.github.io/api/streams.json')).json()
     let rawChannels = await (await fetch('https://iptv-org.github.io/api/channels.json')).json()
@@ -46,8 +35,6 @@ const playlistParser = async () => {
             console.log(channel)
         }
 
-        const group = getCategories(channel)
-
         const toAdd =  {
             id: idx,
             url: eachStream.url,
@@ -56,7 +43,7 @@ const playlistParser = async () => {
             },
             logo: channel.logo || '',
             name: channel.name || '',
-            group
+            group: channel.categories ? channel.categories : ['general']
         }
 
         if(!countryCodes.includes(toAdd.country.code)) {
