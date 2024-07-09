@@ -5,8 +5,11 @@ on:
     - cron: '0 12 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  modify-file:
+  update-playlist:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run command to modify file
+    - name: Run command to update playlist
       run: npm run generatePlaylist
 
     - name: Check for changes
