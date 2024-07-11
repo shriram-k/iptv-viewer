@@ -12747,8 +12747,8 @@
       "country": {
         "code": "BR"
       },
-      "logo": "https://i.imgur.com/3YlJsCL.png",
-      "name": "Band News",
+      "logo": "https://i.ibb.co/0jVZBFp/u8ya-iw-R-400x400.jpg",
+      "name": "BandNews",
       "group": [
         "news"
       ]
@@ -59090,7 +59090,9 @@
       },
       "logo": "https://i.imgur.com/GL1W0EN.png",
       "name": "Libya Alhadath",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 6538,
@@ -101952,7 +101954,9 @@
       },
       "logo": "https://i.imgur.com/t0IyYLE.png",
       "name": "TDM Information",
-      "group": []
+      "group": [
+        "news"
+      ]
     },
     {
       "id": 10467,
@@ -101962,7 +101966,9 @@
       },
       "logo": "https://i.imgur.com/iIfZsD6.png",
       "name": "TDM-Macau Satellite",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 10468,
@@ -101972,7 +101978,9 @@
       },
       "logo": "https://i.imgur.com/qDI3aMp.png",
       "name": "TDM Ou Mun",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 10469,
@@ -101982,7 +101990,9 @@
       },
       "logo": "https://i.imgur.com/qDI3aMp.png",
       "name": "TDM Ou Mun",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 10470,
@@ -113424,16 +113434,6 @@
       },
       "logo": "https://i.imgur.com/Of044Jx.png",
       "name": "TV Cuatro 4.3",
-      "group": []
-    },
-    {
-      "id": 11541,
-      "url": "https://d28367vmhj4ljz.cloudfront.net/out/v1/f26e176ce67244de862cd9b21d823934/index.m3u8",
-      "country": {
-        "code": "BR"
-      },
-      "logo": "https://i.imgur.com/hcApLfE.png",
-      "name": "TV Cultura Nacional",
       "group": []
     },
     {
