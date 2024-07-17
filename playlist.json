@@ -82348,7 +82348,9 @@
       },
       "logo": "https://i.imgur.com/NvYCCGl.png",
       "name": "Raajje TV",
-      "group": []
+      "group": [
+        "news"
+      ]
     },
     {
       "id": 8806,
@@ -106830,7 +106832,9 @@
       },
       "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/5/54/TMC_logo.svg/512px-TMC_logo.svg.png",
       "name": "TMC",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 10992,
