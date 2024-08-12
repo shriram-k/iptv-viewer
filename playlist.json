@@ -113791,7 +113791,9 @@
       },
       "logo": "https://i.imgur.com/gK3lRtZ.png",
       "name": "TVI Ficcao",
-      "group": []
+      "group": [
+        "series"
+      ]
     },
     {
       "id": 12212,
