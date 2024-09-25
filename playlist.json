@@ -76615,7 +76615,9 @@
       },
       "logo": "https://i.imgur.com/ovhVYvP.png",
       "name": "ORTB TV",
-      "group": []
+      "group": [
+        "general"
+      ]
     },
     {
       "id": 8915,
