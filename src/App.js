@@ -11,12 +11,28 @@ import SplashScreen from './screens/Splash';
 import Channels from './screens/Channels';
 import useAppWide from './providers/appWide/hook';
 import ScrollToTop from './components/ScrollToTop';
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 
 function App() {
   const {
     state: {channels, showSplashScreen},
     actions: {setChannels, setCountries, setCategories, setShowSplashScreen}
   } = useAppWide();
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWi_JoPjxd0403I-1pmoYg1FY79sKDSxs",
+    authDomain: "iptv-player-7f741.firebaseapp.com",
+    projectId: "iptv-player-7f741",
+    storageBucket: "iptv-player-7f741.firebasestorage.app",
+    messagingSenderId: "445593910318",
+    appId: "1:445593910318:web:26d608d53455968ec773bf",
+    measurementId: "G-7SW9D2P3LV"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  getAnalytics(app);
+  
 
   const parsePlaylist = useCallback(async () => {
     setShowSplashScreen(true);
