@@ -75,13 +75,11 @@ export function classifyFailure(input: FailureInput, pageProtocol: string, onlin
   // 1. Mixed content — decidable from the scheme alone.
   if (pageProtocol === 'https:' && input.scheme === 'http') return 'browser-blocked'
 
-  // 2. A real, CORS-visible HTTP status.
+  // 2. A real, CORS-visible HTTP status. 403/451 read as a geo gate; any other
+  //    explicit status (404/410/5xx/etc.) is an unusable stream, not a geo claim.
   const code = input.responseCode
   if (typeof code === 'number' && code > 0) {
     if (code === 403 || code === 451) return 'region-restricted'
-    if (code === 404 || code === 410) return 'dead'
-    if (code >= 500 && code <= 599) return 'dead'
-    // Any other explicit status: treat as dead (unusable), not a geo claim.
     return 'dead'
   }
 
@@ -91,6 +89,10 @@ export function classifyFailure(input: FailureInput, pageProtocol: string, onlin
   // 4. No usable status, online — most likely CORS/mixed/unreachable. Best-effort.
   //    Timeouts and content errors still carry a status-less signal but read as
   //    "dead/unavailable" rather than "blocked"; separate them out first.
+  //    `details` is treated as an opaque lowercased string (deliberately no
+  //    hls.js import). `timeout`/`parsing` are the network-error signals; the
+  //    media substrings (codec/buffer/mux) are a version-drift hedge that mostly
+  //    overlaps the `mediaError` type check beside them.
   const d = (input.details ?? '').toLowerCase()
   const isContentOrTimeout =
     d.includes('timeout') ||

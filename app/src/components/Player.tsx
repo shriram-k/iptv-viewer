@@ -87,6 +87,10 @@ export function Player({ channel }: { channel: Channel }) {
       if (deadline) clearTimeout(deadline)
       deadline = undefined
     }
+    // Per-URL wall-clock guard: if nothing becomes playable in time, fail over.
+    const armDeadline = () => {
+      deadline = setTimeout(() => fail('dead'), DEADLINE_MS)
+    }
     const teardownHls = () => {
       if (hls) {
         try {
@@ -155,7 +159,7 @@ export function Player({ channel }: { channel: Channel }) {
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = c.url
         tryPlayMuted()
-        deadline = setTimeout(() => fail('dead'), DEADLINE_MS)
+        armDeadline()
         return
       }
 
@@ -185,7 +189,7 @@ export function Player({ channel }: { channel: Channel }) {
           })
           instance.loadSource(c.url)
           instance.attachMedia(video)
-          deadline = setTimeout(() => fail('dead'), DEADLINE_MS)
+          armDeadline()
         })
         .catch(() => {
           if (!cancelled && myId === attemptId) fail('dead')
@@ -195,14 +199,13 @@ export function Player({ channel }: { channel: Channel }) {
     // First playable signal from the media element = success (true for both the
     // hls.js and native paths; survives autoplay being blocked, since metadata
     // loads regardless of whether playback was allowed to start audibly).
-    const onPlayable = () => markPlaying()
     // Native-path error (the hls.js path classifies via its own ERROR event).
     const onNativeError = () => {
       if (hls) return
       fail(classifyFailure({ scheme: candidates[idx]?.scheme ?? 'https' }, pageProtocol, online))
     }
-    video.addEventListener('loadedmetadata', onPlayable)
-    video.addEventListener('playing', onPlayable)
+    video.addEventListener('loadedmetadata', markPlaying)
+    video.addEventListener('playing', markPlaying)
     video.addEventListener('error', onNativeError)
 
     attempt()
@@ -210,12 +213,15 @@ export function Player({ channel }: { channel: Channel }) {
     return () => {
       cancelled = true
       clearDeadline()
-      video.removeEventListener('loadedmetadata', onPlayable)
-      video.removeEventListener('playing', onPlayable)
+      video.removeEventListener('loadedmetadata', markPlaying)
+      video.removeEventListener('playing', markPlaying)
       video.removeEventListener('error', onNativeError)
       teardownHls()
     }
-  }, [channel.id, retryToken, hasStreams, streams])
+    // streams/hasStreams are invariant for a given channel.id; depending on the
+    // streams array ref would tear down and rebuild the player on any re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel.id, retryToken])
 
   if (!hasStreams) {
     return <p className="rounded bg-gray-100 p-4 text-sm text-gray-600">No stream available for this channel.</p>

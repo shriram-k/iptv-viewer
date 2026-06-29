@@ -1,9 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import type { Channel } from '../data/types'
+import { isPlausiblyLive } from '../data/status'
 
 type Mode = 'compact' | 'full'
-
-const DEAD = new Set(['error', 'timeout', 'blocked', 'offline'])
 
 // Deterministic accent colour from the channel name (logo-fallback avatar).
 function hueFromName(name: string): number {
@@ -13,9 +12,8 @@ function hueFromName(name: string): number {
 }
 
 function Liveness({ channel }: { channel: Channel }) {
-  const status = channel.streams[0]?.status
   // Best-effort hint only; suppress when unknown or known-dead (no false "LIVE").
-  if (!status || status === 'unknown' || DEAD.has(status)) return null
+  if (!isPlausiblyLive(channel.streams[0]?.status)) return null
   return <span aria-label="recently online" title="recently online" className="inline-block h-2 w-2 rounded-full bg-green-500" />
 }
 
