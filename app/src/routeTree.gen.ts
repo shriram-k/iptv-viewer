@@ -9,10 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CountryCodeRouteImport } from './routes/country.$code'
+import { Route as ChannelIdRouteImport } from './routes/channel.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -23,6 +30,11 @@ const CountryCodeRoute = CountryCodeRouteImport.update({
   path: '/country/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChannelIdRoute = ChannelIdRouteImport.update({
+  id: '/channel/$id',
+  path: '/channel/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -31,36 +43,58 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/channel/$id': typeof ChannelIdRoute
   '/country/$code': typeof CountryCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/channel/$id': typeof ChannelIdRoute
   '/country/$code': typeof CountryCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/channel/$id': typeof ChannelIdRoute
   '/country/$code': typeof CountryCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/category/$slug' | '/country/$code'
+  fullPaths:
+    '/' | '/search' | '/category/$slug' | '/channel/$id' | '/country/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/category/$slug' | '/country/$code'
-  id: '__root__' | '/' | '/category/$slug' | '/country/$code'
+  to: '/' | '/search' | '/category/$slug' | '/channel/$id' | '/country/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/search'
+    | '/category/$slug'
+    | '/channel/$id'
+    | '/country/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SearchRoute: typeof SearchRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  ChannelIdRoute: typeof ChannelIdRoute
   CountryCodeRoute: typeof CountryCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -75,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CountryCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/channel/$id': {
+      id: '/channel/$id'
+      path: '/channel/$id'
+      fullPath: '/channel/$id'
+      preLoaderRoute: typeof ChannelIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -87,7 +128,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SearchRoute: SearchRoute,
   CategorySlugRoute: CategorySlugRoute,
+  ChannelIdRoute: ChannelIdRoute,
   CountryCodeRoute: CountryCodeRoute,
 }
 export const routeTree = rootRouteImport
