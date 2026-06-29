@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'pipeline/**'
+      - 'package.json'
+      - '.github/workflows/ci.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'pipeline/**'
+  workflow_dispatch:
+
+jobs:
+  pipeline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The pipeline suite uses the Node built-in test runner and global fetch —
+      # no dependencies to install.
+      - name: Run pipeline tests
+        run: npm run test:pipeline
