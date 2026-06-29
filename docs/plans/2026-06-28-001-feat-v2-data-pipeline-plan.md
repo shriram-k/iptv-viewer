@@ -1,7 +1,7 @@
 ---
 title: "feat: IPTV v2 data pipeline (snapshot → curate → KV)"
 type: feat
-status: active
+status: completed
 date: 2026-06-28
 origin: docs/brainstorms/2026-06-28-v2-data-pipeline-requirements.md
 ---
