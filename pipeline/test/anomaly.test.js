@@ -23,7 +23,7 @@ test('Covers AE2 (anomaly): a country emptied opens a PR', () => {
   const diff = computeDiff(candidate, baseline);
   const res = classifyAnomaly({ diff, candidateStats: zeroStats, baselineStats: zeroStats });
   assert.equal(res.anomalous, true);
-  assert.ok(res.reasons.some((r) => r.includes('country-drop IN')));
+  assert.ok(res.reasons.some((r) => r.includes('country-drop in')));
 });
 
 test('R7 fast-path: a blocklist spike does NOT gate', () => {

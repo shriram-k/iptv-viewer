@@ -7,7 +7,9 @@
 function countByCountry(records) {
   const m = {};
   for (const r of records) {
-    const c = r.country || 'unknown';
+    // case-insensitive: candidate records carry uppercase country codes while a
+    // baseline reconstructed from the channel-index carries lowercase ones.
+    const c = (r.country || 'unknown').toLowerCase();
     m[c] = (m[c] || 0) + 1;
   }
   return m;
