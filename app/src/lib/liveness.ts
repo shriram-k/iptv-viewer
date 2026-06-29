@@ -18,8 +18,8 @@ export function livenessHint(stream: Stream | undefined, now: Date): { text: str
   if (Number.isNaN(checked)) return null
 
   const diffMs = now.getTime() - checked
-  if (diffMs < 0) return { text: 'checked just now' } // clock skew — don't show a future time
-
+  // A negative diff (clock skew) floors to negative minutes, which the `< 1`
+  // branch below renders as "just now" — no separate guard needed.
   const minutes = Math.floor(diffMs / 60_000)
   if (minutes < 1) return { text: 'checked just now' }
   if (minutes < 60) return { text: `checked ${minutes}m ago` }

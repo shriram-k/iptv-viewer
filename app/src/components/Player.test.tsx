@@ -91,9 +91,25 @@ describe('Player', () => {
     await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
     expect(hlsMock.instances[0].loadSource).toHaveBeenCalledWith('https://x/first.m3u8')
     hlsMock.instances[0].emit('hlsManifestParsed')
-    fireEvent.loadedMetadata(video())
+    fireEvent.canPlay(video())
     await waitFor(() => expect(screen.getByTestId('player-unmute')).toBeTruthy())
     expect(screen.queryByTestId('player-error')).toBeNull()
+  })
+
+  it('does not settle on loadedmetadata alone, so a later fatal error still fails over', async () => {
+    render(<Player channel={channel([stream('https://x/first.m3u8'), stream('https://x/second.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    // Metadata parses, but no `canplay` — then the segments fail fatally.
+    fireEvent.loadedMetadata(video())
+    hlsMock.instances[0].emit('hlsError', { fatal: true, type: 'networkError', details: 'fragLoadError', response: { code: 403 } })
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(2))
+    expect(hlsMock.instances[1].loadSource).toHaveBeenCalledWith('https://x/second.m3u8')
+  })
+
+  it('shows the no-stream message when the only stream has an empty URL', () => {
+    render(<Player channel={channel([stream('')])} />)
+    expect(screen.getByText(/No stream available/i)).toBeTruthy()
+    expect(screen.queryByTestId('player')).toBeNull()
   })
 
   it('fails over to the second URL on a fatal error without showing an error card', async () => {

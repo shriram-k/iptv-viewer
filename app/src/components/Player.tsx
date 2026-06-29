@@ -55,7 +55,8 @@ export function Player({ channel }: { channel: Channel }) {
   const [muted, setMuted] = useState(true)
   const [retryToken, setRetryToken] = useState(0)
 
-  const streams = channel.streams
+  // Drop streams with no usable URL up front so they don't masquerade as playable.
+  const streams = channel.streams.filter((s) => !!s.url)
   const hasStreams = streams.length > 0
 
   // Keep the media element's muted property in sync with React state (the `muted`
@@ -69,12 +70,14 @@ export function Player({ channel }: { channel: Channel }) {
     if (!video || !hasStreams) return
 
     const pageProtocol = typeof window !== 'undefined' ? window.location.protocol : 'https:'
-    const online = typeof navigator !== 'undefined' ? navigator.onLine : true
+    // Read connectivity fresh at classification time, not once — it can change mid-failover.
+    const isOnline = () => (typeof navigator !== 'undefined' ? navigator.onLine : true)
     const candidates = buildCandidates(streams, pageProtocol)
     const attempts: FailureClass[] = []
 
     let idx = 0
     let attemptId = 0 // guards stale async (dynamic import) resolutions
+    let nativeAttemptId = -1 // which attempt (if any) is the live native-HLS one
     let settled = false // whether the current attempt has resolved (success or failover)
     let hls: HlsInstance | undefined
     let deadline: ReturnType<typeof setTimeout> | undefined
@@ -157,6 +160,7 @@ export function Player({ channel }: { channel: Channel }) {
 
       // Native HLS (Safari): hand the URL straight to the media element.
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        nativeAttemptId = myId
         video.src = c.url
         tryPlayMuted()
         armDeadline()
@@ -183,7 +187,7 @@ export function Player({ channel }: { channel: Channel }) {
               classifyFailure(
                 { scheme: c.scheme, responseCode: data.response?.code, details: data.details, fatalType: data.type },
                 pageProtocol,
-                online,
+                isOnline(),
               ),
             )
           })
@@ -196,15 +200,19 @@ export function Player({ channel }: { channel: Channel }) {
         })
     }
 
-    // First playable signal from the media element = success (true for both the
-    // hls.js and native paths; survives autoplay being blocked, since metadata
-    // loads regardless of whether playback was allowed to start audibly).
+    // Success = the media element can actually start playback (`canplay`) or is
+    // playing. We deliberately do NOT settle on `loadedmetadata`: metadata can
+    // parse while the media segments are dead/geo-blocked, and settling there
+    // would swallow the subsequent fatal error and freeze on a black player.
+    // `canplay` fires after decodable data arrives, even if autoplay is blocked.
     // Native-path error (the hls.js path classifies via its own ERROR event).
+    // Guarded by nativeAttemptId so a torn-down attempt's spurious `error`
+    // (from video.load()) can't fail over the next candidate prematurely.
     const onNativeError = () => {
-      if (hls) return
-      fail(classifyFailure({ scheme: candidates[idx]?.scheme ?? 'https' }, pageProtocol, online))
+      if (hls || nativeAttemptId !== attemptId) return
+      fail(classifyFailure({ scheme: candidates[idx]?.scheme ?? 'https' }, pageProtocol, isOnline()))
     }
-    video.addEventListener('loadedmetadata', markPlaying)
+    video.addEventListener('canplay', markPlaying)
     video.addEventListener('playing', markPlaying)
     video.addEventListener('error', onNativeError)
 
@@ -213,7 +221,7 @@ export function Player({ channel }: { channel: Channel }) {
     return () => {
       cancelled = true
       clearDeadline()
-      video.removeEventListener('loadedmetadata', markPlaying)
+      video.removeEventListener('canplay', markPlaying)
       video.removeEventListener('playing', markPlaying)
       video.removeEventListener('error', onNativeError)
       teardownHls()
