@@ -28,3 +28,8 @@ docs/brainstorms/
 docs/plans/
 docs/research/2026-06-28-playability-probe.md
 docs/research/2026-06-28-seo-serp-check.md
+
+# Playwright MCP browser-test artifacts
+.playwright-mcp/
+/home.png
+/channel.png

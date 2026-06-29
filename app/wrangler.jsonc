@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "iptv-viewer-v2",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  // KV namespace the data pipeline publishes the snapshot to (country:*, category:*,
+  // channel-index, meta). Create it with `wrangler kv namespace create SNAPSHOT_KV`
+  // and paste the returned id below. Until set, the app falls back to the bundled
+  // dev fixture (see src/data/store.ts).
+  "kv_namespaces": [{ "binding": "SNAPSHOT_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }]
+}
