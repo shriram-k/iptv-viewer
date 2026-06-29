@@ -52,7 +52,7 @@ function ChannelPage() {
         {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded object-contain" />}
         <div className="text-sm text-gray-600">
           <p>{[channel.country?.toUpperCase(), ...channel.categories].filter(Boolean).join(' · ')}</p>
-          {channel.streams[0]?.checkedAt && <p className="text-xs text-gray-400">checked {new Date(channel.streams[0].checkedAt).toLocaleDateString()}</p>}
+          {channel.streams[0]?.checkedAt && <p className="text-xs text-gray-400">checked {channel.streams[0].checkedAt.slice(0, 10)}</p>}
         </div>
       </section>
       {channel.categories[0] && (
