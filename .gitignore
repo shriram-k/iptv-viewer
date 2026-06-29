@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local planning / strategy docs — kept on disk, not published to the public repo.
+docs/ideation/
+docs/brainstorms/
+docs/plans/
+docs/research/2026-06-28-playability-probe.md
+docs/research/2026-06-28-seo-serp-check.md

@@ -1,0 +1,75 @@
+name: v2 data pipeline
+
+on:
+  schedule:
+    - cron: '0 12 * * *'   # daily (origin R6)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Serialize runs so a manual dispatch can't interleave KV writes / git pushes
+# with the scheduled run.
+concurrency:
+  group: v2-pipeline
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run pipeline tests
+        run: npm run test:pipeline
+
+      - name: Run pipeline (ingest → curate → diff → snapshot → publish)
+        id: pipeline
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: npm run pipeline
+
+      # Normal / fast-pathed diff → auto-commit the snapshot to the default branch
+      # (KV was already published by the pipeline step). origin R6/R12.
+      - name: Commit snapshot (normal)
+        if: steps.pipeline.outputs.action == 'published'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/snapshot data/pipeline-state.json
+          if git diff-index --quiet HEAD --; then
+            echo "No snapshot changes."
+          else
+            git commit -m "chore(pipeline): daily snapshot refresh"
+            # The repo receives other automated commits; rebase + retry so a
+            # non-fast-forward push doesn't leave KV ahead of the committed baseline.
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin "$(git rev-parse --abbrev-ref HEAD)" || true
+              if git push; then break; fi
+              echo "push attempt $attempt failed; retrying"; sleep 5
+            done
+          fi
+
+      # Anomaly diff → open a review PR; do NOT publish (prior snapshot stays live).
+      # origin R7.
+      - name: Open anomaly review PR
+        if: steps.pipeline.outputs.action == 'anomaly-pr'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(pipeline): anomalous snapshot — review required'
+          branch: pipeline/anomaly-review
+          title: 'Pipeline anomaly — snapshot review required'
+          body-path: data/pipeline-summary.md
+          labels: pipeline-anomaly
