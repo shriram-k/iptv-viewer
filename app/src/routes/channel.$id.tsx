@@ -3,6 +3,7 @@ import { getStore } from '../data/store'
 import { getChannel } from '../data/kv'
 import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
+import { livenessHint } from '../lib/liveness'
 
 export const Route = createFileRoute('/channel/$id')({
   loader: async ({ params }) => {
@@ -24,6 +25,7 @@ export const Route = createFileRoute('/channel/$id')({
 
 function ChannelPage() {
   const { channel } = Route.useLoaderData()
+  const liveness = livenessHint(channel.streams[0], new Date())
   const videoObject = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -52,7 +54,7 @@ function ChannelPage() {
         {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded object-contain" />}
         <div className="text-sm text-gray-600">
           <p>{[channel.country?.toUpperCase(), ...channel.categories].filter(Boolean).join(' · ')}</p>
-          {channel.streams[0]?.checkedAt && <p className="text-xs text-gray-400">checked {channel.streams[0].checkedAt.slice(0, 10)}</p>}
+          {liveness && <p className="text-xs text-gray-400" title="best-effort — streams are checked about daily">{liveness.text}</p>}
         </div>
       </section>
       {channel.categories[0] && (
