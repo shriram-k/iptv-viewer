@@ -2,11 +2,16 @@
 /**
  * U4 — Curate gate (origin R3, R14, R15): turn the enriched model into a SFW,
  * sanitized, blocklist-compliant, deduped catalog. Pure function for testability.
+ *
+ * Also returns droppedFilterIds — the channel ids removed *because* we filtered
+ * them (NSFW/keyword/blocklist). The anomaly gate intersects this with the set of
+ * baseline ids that disappeared, so a blocklist/NSFW spike never masks an
+ * unrelated mass removal (identity-based fast-path, not raw count deltas).
  */
+const { DEAD_STATUS, toStorageCategorySlug } = require('./schema');
 const { sanitizeText, sanitizeUrl } = require('./sanitize');
 
 const ADULT_CATEGORY_IDS = new Set(['xxx', 'adult']);
-const HARD_DEAD_STATUS = new Set(['error', 'timeout', 'blocked', 'offline']);
 
 /** Secondary NSFW keyword gate (R15) — defends against unflagged adult entries. */
 const DEFAULT_NSFW_KEYWORDS = [
@@ -14,19 +19,18 @@ const DEFAULT_NSFW_KEYWORDS = [
   'hustler', 'nude', 'naked', 'webcam', 'camgirl', 'hentai', 'milf', 'sexshop',
 ];
 
-function matchesNsfwKeyword(record, keywords) {
-  const haystack = (record.name + ' ' + record.streams.map((s) => s.url).join(' ')).toLowerCase();
-  return keywords.some((kw) => new RegExp(`\\b${kw}\\b`, 'i').test(haystack));
+function buildKeywordRegex(keywords) {
+  return new RegExp(`\\b(${keywords.join('|')})\\b`, 'i');
 }
 
 /**
  * @param {Array<object>} records  enriched channel records
  * @param {{ blocklist?: any[], nsfwKeywords?: string[] }} opts
- * @returns {{ kept: Array<object>, stats: object }}
+ * @returns {{ kept: Array<object>, stats: object, droppedFilterIds: string[] }}
  */
 function curate(records, opts = {}) {
   const blocklist = opts.blocklist || [];
-  const keywords = opts.nsfwKeywords || DEFAULT_NSFW_KEYWORDS;
+  const keywordRe = buildKeywordRegex(opts.nsfwKeywords || DEFAULT_NSFW_KEYWORDS);
   const blocked = new Set(blocklist.map((b) => b.channel).filter(Boolean));
 
   const stats = {
@@ -38,31 +42,41 @@ function curate(records, opts = {}) {
     droppedDead: 0,
   };
   const kept = [];
+  const droppedFilterIds = [];
 
   for (const r of records) {
     // sanitize first so downstream checks + storage are clean (R14)
     const name = sanitizeText(r.name);
     const logo = sanitizeUrl(r.logo);
+    const categories = (r.categories || []).map(toStorageCategorySlug).filter(Boolean);
+    const languages = (r.languages || []).map(sanitizeText).filter(Boolean);
+    const guide = r.guide
+      ? { site: sanitizeText(r.guide.site), siteId: sanitizeText(r.guide.siteId), lang: sanitizeText(r.guide.lang) }
+      : null;
     const seen = new Set();
     const streams = r.streams
       .map((s) => ({ ...s, url: sanitizeUrl(s.url) }))
       .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url)); // drop bad-scheme + dup URLs
 
-    const rec = { ...r, name, logo, streams };
+    const rec = { ...r, name, logo, categories, languages, guide, streams };
+    const haystack = `${name} ${streams.map((s) => s.url).join(' ')}`;
 
-    if (rec.isNsfw || rec.categories.some((c) => ADULT_CATEGORY_IDS.has(c))) {
+    if (rec.isNsfw || categories.some((c) => ADULT_CATEGORY_IDS.has(c))) {
       stats.droppedNsfw++;
+      droppedFilterIds.push(rec.id);
       continue;
     }
-    if (matchesNsfwKeyword(rec, keywords)) {
+    if (keywordRe.test(haystack)) {
       stats.droppedKeyword++;
+      droppedFilterIds.push(rec.id);
       continue;
     }
     if (blocked.has(rec.id)) {
       stats.droppedBlocklist++;
+      droppedFilterIds.push(rec.id);
       continue;
     }
-    if (rec.streams.length === 0 || rec.streams.every((s) => HARD_DEAD_STATUS.has(s.status))) {
+    if (streams.length === 0 || streams.every((s) => DEAD_STATUS.has(s.status))) {
       stats.droppedDead++;
       continue;
     }
@@ -71,7 +85,7 @@ function curate(records, opts = {}) {
   }
 
   stats.kept = kept.length;
-  return { kept, stats };
+  return { kept, stats, droppedFilterIds };
 }
 
 module.exports = { curate, DEFAULT_NSFW_KEYWORDS };

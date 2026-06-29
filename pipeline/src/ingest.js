@@ -7,12 +7,30 @@
  */
 const { ENDPOINTS } = require('./schema');
 
+const TIMEOUT_MS = 20000;
+const MAX_ATTEMPTS = 3;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function defaultFetchJson(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': 'iptv-viewer-pipeline/2.0' } });
-  if (res.status !== 200) {
-    throw new Error(`Fetch failed for ${url}: HTTP ${res.status}`);
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'iptv-viewer-pipeline/2.0' },
+        signal: ctrl.signal,
+      });
+      if (res.status === 200) return res.json();
+      lastErr = new Error(`Fetch failed for ${url}: HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err; // network error or timeout/abort
+    } finally {
+      clearTimeout(timer);
+    }
+    if (attempt < MAX_ATTEMPTS) await sleep(1000 * attempt);
   }
-  return res.json();
+  throw lastErr;
 }
 
 /**

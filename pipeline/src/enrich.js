@@ -5,9 +5,7 @@
  *
  * Pure function over raw datasets so it is fully unit-testable with fixtures.
  */
-const { normalizeCountryCode } = require('./schema');
-
-const DEAD_STATUS = new Set(['error', 'timeout', 'blocked', 'offline']);
+const { normalizeCountryCode, DEAD_STATUS } = require('./schema');
 
 function schemeOf(url) {
   return /^https:\/\//i.test(url) ? 'https' : 'http';
@@ -92,7 +90,9 @@ function enrich(raw) {
       id: ch.id,
       name: ch.name || '',
       country: normalizeCountryCode(ch.country),
-      categories: Array.isArray(ch.categories) ? ch.categories : [],
+      // Default to ['general'] for uncategorized channels (v1 playlistGenerator parity)
+      // so they still appear under a category surface rather than vanishing.
+      categories: Array.isArray(ch.categories) && ch.categories.length > 0 ? ch.categories : ['general'],
       languages,
       isNsfw: ch.is_nsfw === true,
       logo,

@@ -7,19 +7,55 @@
  * Env: CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID, CF_API_TOKEN, CF_ZONE_ID
  */
 const API = 'https://api.cloudflare.com/client/v4';
+const TIMEOUT_MS = 15000;
+const MAX_ATTEMPTS = 3;
 
-function authHeaders() {
-  return { Authorization: `Bearer ${process.env.CF_API_TOKEN}` };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required environment variable: ${name}`);
+  return v;
+}
+
+/** fetch with a timeout and bounded retry on transient (network / 429 / 5xx) failures. */
+async function fetchResilient(url, options, label) {
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { ...options, signal: ctrl.signal });
+      if (res.ok) return res;
+      // Retry transient server/rate-limit responses; fail fast on 4xx (config/auth).
+      if (res.status === 429 || res.status >= 500) {
+        lastErr = new Error(`${label} failed: HTTP ${res.status}`);
+      } else {
+        throw Object.assign(new Error(`${label} failed: HTTP ${res.status}`), { fatal: true });
+      }
+    } catch (err) {
+      if (err.fatal) throw err; // non-retryable (4xx) — do not loop
+      lastErr = err;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (attempt < MAX_ATTEMPTS) await sleep(500 * 2 ** (attempt - 1));
+  }
+  throw lastErr;
 }
 
 function makeKvClient() {
-  const acct = process.env.CF_ACCOUNT_ID;
-  const ns = process.env.CF_KV_NAMESPACE_ID;
+  const acct = requireEnv('CF_ACCOUNT_ID');
+  const ns = requireEnv('CF_KV_NAMESPACE_ID');
+  requireEnv('CF_API_TOKEN');
   return {
     async put(key, value) {
       const url = `${API}/accounts/${acct}/storage/kv/namespaces/${ns}/values/${encodeURIComponent(key)}`;
-      const res = await fetch(url, { method: 'PUT', headers: authHeaders(), body: value });
-      if (!res.ok) throw new Error(`KV put ${key} failed: HTTP ${res.status}`);
+      await fetchResilient(url, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${process.env.CF_API_TOKEN}` },
+        body: value,
+      }, `KV put ${key}`);
     },
   };
 }
@@ -29,12 +65,11 @@ function makePurge() {
   return async () => {
     if (!zone) return; // purge optional; TTL fallback covers staleness
     const url = `${API}/zones/${zone}/purge_cache`;
-    const res = await fetch(url, {
+    await fetchResilient(url, {
       method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${requireEnv('CF_API_TOKEN')}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ purge_everything: true }),
-    });
-    if (!res.ok) throw new Error(`Cache purge failed: HTTP ${res.status}`);
+    }, 'Cache purge');
   };
 }
 

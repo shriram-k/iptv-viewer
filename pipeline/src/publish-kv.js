@@ -40,10 +40,17 @@ async function publishSnapshot({ shards, kv, purge }) {
   await put(kvKey.meta(), shards.meta);
 
   // 3. Invalidate the edge cache so the new data is served without a deploy (R12).
+  // Best-effort: the data is already committed to KV, so a purge failure must NOT
+  // fail the publish (that would skip the workflow's commit step and strand KV
+  // ahead of git). The cache TTL bounds staleness as a fallback.
   let purged = false;
   if (typeof purge === 'function') {
-    await purge();
-    purged = true;
+    try {
+      await purge();
+      purged = true;
+    } catch (err) {
+      console.warn(`Cache purge failed (non-fatal; TTL will bound staleness): ${err.message}`);
+    }
   }
 
   return { written, purged };

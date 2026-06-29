@@ -9,9 +9,16 @@ permissions:
   contents: write
   pull-requests: write
 
+# Serialize runs so a manual dispatch can't interleave KV writes / git pushes
+# with the scheduled run.
+concurrency:
+  group: v2-pipeline
+  cancel-in-progress: false
+
 jobs:
   pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,7 +52,13 @@ jobs:
             echo "No snapshot changes."
           else
             git commit -m "chore(pipeline): daily snapshot refresh"
-            git push
+            # The repo receives other automated commits; rebase + retry so a
+            # non-fast-forward push doesn't leave KV ahead of the committed baseline.
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin "$(git rev-parse --abbrev-ref HEAD)" || true
+              if git push; then break; fi
+              echo "push attempt $attempt failed; retrying"; sleep 5
+            done
           fi
 
       # Anomaly diff → open a review PR; do NOT publish (prior snapshot stays live).

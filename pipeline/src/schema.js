@@ -20,11 +20,33 @@ const ENDPOINTS = {
   guides: `${IPTV_ORG_BASE}/guides.json`,
 };
 
+/**
+ * Single source of truth for stream statuses that mean "not playable / dead"
+ * (shared by enrich's playability hint and curate's drop gate to prevent drift).
+ */
+const DEAD_STATUS = new Set(['error', 'timeout', 'blocked', 'offline']);
+
 /** Country-code fixups carried forward from v1 playlistGenerator.js. */
 function normalizeCountryCode(code) {
   if (!code) return code;
   if (code === 'UK') return 'GB';
   return code;
+}
+
+/**
+ * Storage-safe, lowercase country key. Untrusted upstream values are validated
+ * to a 2-letter code; anything else collapses to 'unknown' so it can never be
+ * used to escape the snapshot directory (path traversal) or emit a junk key.
+ */
+function toStorageCountryCode(code) {
+  const normalized = (normalizeCountryCode(code) || '').toString().toLowerCase();
+  return /^[a-z]{2}$/.test(normalized) ? normalized : 'unknown';
+}
+
+/** Storage-safe category slug, or null if the upstream value is unusable. */
+function toStorageCategorySlug(slug) {
+  const s = String(slug || '').toLowerCase();
+  return /^[a-z0-9-]+$/.test(s) ? s : null;
 }
 
 /** KV key builders — the runtime read contract (origin R5/R8). */
@@ -40,4 +62,13 @@ function isHttpUrl(value) {
   return typeof value === 'string' && /^https?:\/\//i.test(value);
 }
 
-module.exports = { IPTV_ORG_BASE, ENDPOINTS, normalizeCountryCode, kvKey, isHttpUrl };
+module.exports = {
+  IPTV_ORG_BASE,
+  ENDPOINTS,
+  DEAD_STATUS,
+  normalizeCountryCode,
+  toStorageCountryCode,
+  toStorageCategorySlug,
+  kvKey,
+  isHttpUrl,
+};

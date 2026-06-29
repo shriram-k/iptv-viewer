@@ -33,11 +33,12 @@ const { publishSnapshot } = require('./publish-kv');
 async function runPipeline(deps) {
   const raw = await ingest(deps.fetchJson || defaultFetchJson);
   const enriched = enrich(raw);
-  const { kept, stats } = curate(enriched, { blocklist: raw.blocklist });
+  const { kept, stats, droppedFilterIds } = curate(enriched, { blocklist: raw.blocklist });
 
   const diff = computeDiff(kept, deps.baseline || null);
   const anomaly = classifyAnomaly({
     diff,
+    droppedFilterIds,
     candidateStats: stats,
     baselineStats: deps.baselineStats,
     thresholds: deps.thresholds,
@@ -67,15 +68,17 @@ function loadBaseline() {
   try {
     const idx = JSON.parse(fs.readFileSync(path.join(SNAPSHOT_DIR, 'channel-index.json'), 'utf8'));
     return Object.entries(idx).map(([id, v]) => ({ id, country: v.country }));
-  } catch {
-    return null; // first run
+  } catch (err) {
+    if (err.code === 'ENOENT') return null; // genuine first run
+    throw err; // corruption/parse error must fail loudly, NOT bypass the gate as "first run"
   }
 }
 function loadBaselineStats() {
   try {
     return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')).stats;
-  } catch {
-    return undefined;
+  } catch (err) {
+    if (err.code === 'ENOENT') return undefined;
+    throw err;
   }
 }
 

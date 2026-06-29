@@ -44,10 +44,13 @@ test('anomaly run opens a PR and does NOT publish to KV', async () => {
   assert.equal(kv.puts.length, 0, 'anomaly path must not publish to KV');
 });
 
-test('first run (no baseline) publishes and seeds', async () => {
+test('first run (no baseline) above floor publishes and seeds', async () => {
   const candidate = chans(10);
   const kv = { puts: [], async put(k) { this.puts.push(k); } };
-  const res = await runPipeline({ fetchJson: makeFetch(candidate), baseline: null, ...v, persist: async () => {}, kv });
+  const res = await runPipeline({
+    fetchJson: makeFetch(candidate), baseline: null, ...v, persist: async () => {}, kv,
+    thresholds: { minFirstRunChannels: 1, minFirstRunCountries: 1 }, // 10 single-country chans
+  });
   assert.equal(res.action, 'published');
   assert.deepEqual(res.anomaly.reasons, ['baseline-seed']);
 });

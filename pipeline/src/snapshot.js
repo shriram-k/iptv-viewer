@@ -9,6 +9,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { toStorageCountryCode, toStorageCategorySlug } = require('./schema');
 
 /** Strip internal pipeline fields; keep what the runtime needs. */
 function publicChannel(r) {
@@ -43,15 +44,17 @@ function buildShards(records, opts) {
 
   for (const r of records) {
     const ch = publicChannel(r);
-    const code = (ch.country || 'unknown').toLowerCase();
+    // Storage keys are validated (2-letter country / slug-safe category) so an
+    // untrusted upstream value can never escape the snapshot dir or emit a junk key.
+    const code = toStorageCountryCode(ch.country);
     (countries[code] = countries[code] || []).push(ch);
 
-    for (const cat of ch.categories) {
-      const slug = String(cat).toLowerCase();
+    const safeCategories = ch.categories.map(toStorageCategorySlug).filter(Boolean);
+    for (const slug of safeCategories) {
       (categories[slug] = categories[slug] || []).push({ id: ch.id, country: code });
     }
 
-    channelIndex[ch.id] = { country: code, categories: ch.categories, name: ch.name };
+    channelIndex[ch.id] = { country: code, categories: safeCategories, name: ch.name };
   }
 
   const meta = {
@@ -84,4 +87,4 @@ function writeSnapshot(shards, dir) {
   fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify(shards.meta, null, 2));
 }
 
-module.exports = { buildShards, writeSnapshot, publicChannel };
+module.exports = { buildShards, writeSnapshot };
