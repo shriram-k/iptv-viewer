@@ -128,9 +128,37 @@ test('only covered countries are processed', async () => {
   assert.equal(shardsByCountry.fr, undefined);
 });
 
-test('a null bundle (no data) yields zero coverage, not a crash', async () => {
+test('a null bundle (no data) yields zero coverage and no shard (prior preserved)', async () => {
   const args = baseArgs({ fetchBundle: async () => null });
-  const { shardsByCountry, coverage } = await buildEpg(args);
-  assert.equal(shardsByCountry.gb, undefined);
+  const { shardsByCountry, coverage, fetched } = await buildEpg(args);
+  assert.equal(shardsByCountry.gb, undefined, 'no shard written → publish leaves any prior shard');
   assert.equal(coverage.gb, 0);
+  assert.deepEqual(fetched, [], 'a null bundle is not counted as fetched');
+});
+
+test('a fetched-but-empty region records an empty shard (clears stale data)', async () => {
+  // Bundle has a channel that matches nothing in the catalog.
+  const args = baseArgs({ fetchBundle: async () => bundle([{ id: '1', name: 'Totally Unknown' }], []) });
+  const { shardsByCountry, fetched } = await buildEpg(args);
+  assert.deepEqual(shardsByCountry.gb, {}, 'empty shard written so the publish overwrites stale');
+  assert.deepEqual(fetched, ['gb']);
+});
+
+test('HD/SD epg variants dedupe to one catalog channel (no doubled listings)', async () => {
+  const args = baseArgs({
+    channels: [{ id: 'BBCOne.uk', name: 'BBC One', country: 'GB' }],
+    fetchBundle: async () =>
+      bundle(
+        [
+          { id: '100', name: 'BBC One' },
+          { id: '101', name: 'BBC One HD' }, // same normalized name → must NOT also map
+        ],
+        [
+          { ch: '100', start: '20260630143000 +0000', stop: '20260630150000 +0000', title: 'A' },
+          { ch: '101', start: '20260630143000 +0000', stop: '20260630150000 +0000', title: 'A (HD dupe)' },
+        ],
+      ),
+  });
+  const { shardsByCountry } = await buildEpg(args);
+  assert.equal(shardsByCountry.gb['BBCOne.uk'].length, 1, 'only the first epg variant is mapped');
 });

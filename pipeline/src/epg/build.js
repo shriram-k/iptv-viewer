@@ -87,6 +87,7 @@ async function buildEpg({ channels, coveredCountries, fetchBundle, now, bracketH
 
   const shardsByCountry = {};
   const coverage = {};
+  const fetched = []; // countries whose bundle actually loaded (fetched ok, even if 0 matches)
 
   for (const code of coveredCountries) {
     const scope = scopeByCountry.get(code) || { total: 0, nameToId: new Map() };
@@ -97,15 +98,21 @@ async function buildEpg({ channels, coveredCountries, fetchBundle, now, bracketH
     try {
       xml = await fetchBundle(code);
     } catch {
-      continue; // best-effort: one bad region must not sink the others
+      continue; // fetch failed → leave any prior shard in place (do not clear)
     }
-    if (!xml) continue;
+    if (xml == null) continue; // region not published → keep prior shard
+    fetched.push(code);
 
-    // epg.pw channel id → our iptv id, via normalized display-name.
+    // epg.pw channel id → our iptv id, via normalized display-name. Dedupe so an
+    // HD/SD pair (e.g. "BBC One" + "BBC One HD") doesn't merge two schedules into
+    // one catalog channel — the first epg channel to claim an iptv id wins.
     const epgIdToIptv = new Map();
+    const claimed = new Set();
     for (const c of parseXmltvChannels(xml)) {
       const iptvId = scope.nameToId.get(normalizeName(c.name));
-      if (iptvId) epgIdToIptv.set(c.id, iptvId);
+      if (!iptvId || claimed.has(iptvId)) continue;
+      epgIdToIptv.set(c.id, iptvId);
+      claimed.add(iptvId);
     }
 
     // Group programmes by iptv channel id.
@@ -127,11 +134,13 @@ async function buildEpg({ channels, coveredCountries, fetchBundle, now, bracketH
       withSchedule++;
     }
 
-    if (withSchedule > 0) shardsByCountry[code] = shard;
+    // Always record a shard for a fetched country (possibly empty) so the publish
+    // step overwrites any stale prior shard rather than leaving it.
+    shardsByCountry[code] = shard;
     coverage[code] = withSchedule / scope.total;
   }
 
-  return { shardsByCountry, coverage };
+  return { shardsByCountry, coverage, fetched };
 }
 
 module.exports = { buildEpg, normalizeName, fillStops, inWindow };

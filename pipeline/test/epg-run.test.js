@@ -34,3 +34,20 @@ test('runEpg with a kv client publishes shards then meta', async () => {
   assert.equal(writes[0].key, kvKey.epg('gb'));
   assert.equal(writes[writes.length - 1].key, kvKey.epgMeta());
 });
+
+test('runEpg skips publish on a degenerate (empty) result — protects prior guide', async () => {
+  const writes = [];
+  const kv = { put: async (key, value) => writes.push({ key, value }) };
+  // Bundle matches nothing → channelCount 0 → must NOT publish.
+  const res = await runEpg(deps({ kv, fetchBundle: async () => '<tv><channel id="9"><display-name>Nope</display-name></channel></tv>' }));
+  assert.equal(res.skipped, true);
+  assert.equal(res.publish, null);
+  assert.equal(writes.length, 0, 'nothing written — previous guide preserved');
+});
+
+test('runEpg rejects a non-array channels.json (clear failure, not a TypeError)', async () => {
+  await assert.rejects(
+    () => runEpg(deps({ fetchJson: async () => ({ not: 'an array' }) })),
+    /did not return an array/,
+  );
+});
