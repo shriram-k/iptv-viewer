@@ -5,6 +5,7 @@ import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
 import { LivenessHint } from '../components/LivenessHint'
 import { NowNext } from '../components/NowNext'
+import { broadcastEvents } from '../lib/jsonld'
 
 export const Route = createFileRoute('/channel/$id')({
   loader: async ({ params }) => {
@@ -30,6 +31,9 @@ export const Route = createFileRoute('/channel/$id')({
 
 function ChannelPage() {
   const { channel, schedule } = Route.useLoaderData()
+  // Absolute-UTC BroadcastEvents from the schedule (R9), else a single live event.
+  // SSR-safe: no "now" is computed, so server and client output match.
+  const events = broadcastEvents(schedule)
   const videoObject = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -37,7 +41,7 @@ function ChannelPage() {
     description: `Watch ${channel.name} live`,
     thumbnailUrl: channel.logo ?? undefined,
     contentUrl: channel.streams[0]?.url,
-    publication: { '@type': 'BroadcastEvent', isLiveBroadcast: true },
+    publication: events.length > 0 ? events : { '@type': 'BroadcastEvent', isLiveBroadcast: true },
   }
   // Mobile: player above the fold (rendered before the metadata block).
   return (
