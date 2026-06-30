@@ -77,22 +77,19 @@ describe('currentlyAiring', () => {
 describe('boardEligible', () => {
   const meta: EpgMeta = {
     generatedAt: 'x',
-    coverage: { in: 0.5, gb: 0.05 },
+    coverage: {},
     config: { coverageThreshold: 0.2, minAiring: 3, bracketHours: 36 },
   }
   it('true when coverage exceeds threshold AND airing >= minAiring', () => {
-    expect(boardEligible(meta, 'in', 3)).toBe(true)
+    expect(boardEligible(meta, 0.5, 3)).toBe(true)
   })
   it('false when coverage below threshold', () => {
-    expect(boardEligible(meta, 'gb', 10)).toBe(false)
+    expect(boardEligible(meta, 0.05, 10)).toBe(false)
   })
   it('false when too few currently airing (e.g. late night)', () => {
-    expect(boardEligible(meta, 'in', 2)).toBe(false)
-  })
-  it('false when the scope has no coverage entry', () => {
-    expect(boardEligible(meta, 'fr', 10)).toBe(false)
+    expect(boardEligible(meta, 0.5, 2)).toBe(false)
   })
   it('false when meta is null', () => {
-    expect(boardEligible(null, 'in', 10)).toBe(false)
+    expect(boardEligible(null, 0.5, 10)).toBe(false)
   })
 })

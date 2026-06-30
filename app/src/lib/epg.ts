@@ -48,10 +48,12 @@ export function currentlyAiring(shard: EpgShard, nowMs: number): Array<{ channel
   return out
 }
 
-/** Whether the Live-now board should show for a scope: coverage AND enough airing (R6). */
-export function boardEligible(meta: EpgMeta | null, scopeKey: string, airingCount: number): boolean {
+/**
+ * Whether the Live-now board should show: the scope's coverage exceeds the
+ * threshold AND enough channels are airing right now (R6). `coverage` is passed
+ * in (per-country from epg-meta, or computed for a cross-country category scope).
+ */
+export function boardEligible(meta: EpgMeta | null, coverage: number, airingCount: number): boolean {
   if (!meta) return false
-  const coverage = meta.coverage[scopeKey]
-  if (coverage == null) return false
   return coverage >= meta.config.coverageThreshold && airingCount >= meta.config.minAiring
 }
