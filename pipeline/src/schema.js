@@ -55,6 +55,10 @@ const kvKey = {
   category: (slug) => `category:${String(slug).toLowerCase()}`,
   channelIndex: () => 'channel-index',
   meta: () => 'meta',
+  // EPG keys live under their own prefix and are written by the separate,
+  // faster EPG job — never mixed with the daily catalog snapshot keys above.
+  epg: (code) => `epg:${String(code).toLowerCase()}`,
+  epgMeta: () => 'epg-meta',
 };
 
 /** A permissive http(s) URL guard (origin R14). */

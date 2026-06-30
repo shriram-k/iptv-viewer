@@ -25,6 +25,7 @@
     "eject": "react-scripts eject",
     "generatePlaylist": "node ./playlistGenerator.js",
     "pipeline": "node ./pipeline/src/run.js",
+    "epg": "node ./pipeline/src/epg/run.js",
     "test:pipeline": "node --test pipeline/test/*.test.js",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"

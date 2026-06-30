@@ -1,0 +1,37 @@
+name: v2 EPG refresh
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6h — own cadence, independent of the daily catalog (origin R2)
+  workflow_dispatch:
+
+# Serialize EPG runs separately from the catalog pipeline so neither blocks the other.
+concurrency:
+  group: v2-epg
+  cancel-in-progress: false
+
+jobs:
+  epg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Zero-dependency (Node built-ins + global fetch) — no install step, like the
+      # catalog pipeline. EPG tests run under the shared test:pipeline glob.
+      - name: Run pipeline tests
+        run: npm run test:pipeline
+
+      - name: Run EPG job (guides + XMLTV → KV)
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: node ./pipeline/src/epg/run.js
