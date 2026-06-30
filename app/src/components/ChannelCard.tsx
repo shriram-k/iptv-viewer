@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import type { Channel } from '../data/types'
+import type { Channel, Programme } from '../data/types'
 import { isPlausiblyLive } from '../data/status'
+import { NowNext } from './NowNext'
 
 type Mode = 'compact' | 'full'
 
@@ -46,7 +47,7 @@ function Logo({ channel }: { channel: Channel }) {
   )
 }
 
-export function ChannelCard({ channel, mode = 'full' }: { channel: Channel; mode?: Mode }) {
+export function ChannelCard({ channel, mode = 'full', schedule }: { channel: Channel; mode?: Mode; schedule?: Programme[] }) {
   return (
     <Link
       to="/channel/$id"
@@ -65,6 +66,7 @@ export function ChannelCard({ channel, mode = 'full' }: { channel: Channel; mode
             {[channel.country?.toUpperCase(), channel.categories[0]].filter(Boolean).join(' · ')}
           </span>
         )}
+        {mode === 'full' && <NowNext schedule={schedule} />}
       </span>
     </Link>
   )

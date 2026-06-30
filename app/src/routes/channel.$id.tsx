@@ -1,15 +1,20 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { getStore } from '../data/store'
-import { getChannel } from '../data/kv'
+import { getChannel, getEpgShard } from '../data/kv'
 import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
 import { LivenessHint } from '../components/LivenessHint'
+import { NowNext } from '../components/NowNext'
 
 export const Route = createFileRoute('/channel/$id')({
   loader: async ({ params }) => {
-    const channel = await getChannel(getStore(), params.id)
+    const store = getStore()
+    const channel = await getChannel(store, params.id)
     if (!channel) throw notFound()
-    return { channel }
+    // EPG schedule (absolute UTC times) fetched server-side; now/next is computed
+    // client-side. Absent country/coverage → empty → labels silently omitted.
+    const schedule = channel.country ? (await getEpgShard(store, channel.country))[channel.id] : undefined
+    return { channel, schedule: schedule ?? null }
   },
   head: ({ loaderData }) => ({
     meta: [{ title: loaderData ? `${loaderData.channel.name} — watch live` : 'Channel' }],
@@ -24,7 +29,7 @@ export const Route = createFileRoute('/channel/$id')({
 })
 
 function ChannelPage() {
-  const { channel } = Route.useLoaderData()
+  const { channel, schedule } = Route.useLoaderData()
   const videoObject = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -49,6 +54,7 @@ function ChannelPage() {
       </nav>
       <h1 className="mb-3 text-xl font-bold">{channel.name}</h1>
       <Player channel={channel} />
+      <NowNext schedule={schedule ?? undefined} className="mt-3 text-sm text-gray-600" />
       <section className="mt-4 flex items-center gap-3">
         {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded object-contain" />}
         <div className="text-sm text-gray-600">
