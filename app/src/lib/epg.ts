@@ -5,12 +5,17 @@ import type { Programme, EpgShard, EpgMeta } from '../data/types'
 // passed in (the viewer's clock), so there is no server "now" and the result is
 // deterministic and testable. See the EPG plan (U5).
 
-/** Effective stop = explicit stop, else the next programme's start (open-ended if last). */
+// A trailing null-stop programme (no explicit stop and nothing after it) is
+// capped to this duration rather than airing forever — a stale shard must not
+// keep a finished programme flagged "Now" / counted as airing indefinitely.
+const MAX_OPEN_MS = 4 * 3600_000
+
+/** Effective stop = explicit stop, else the next programme's start, else a bounded open end. */
 function effectiveStop(programmes: Programme[], i: number): number {
   const p = programmes[i]
   if (p.stopUtcMs != null) return p.stopUtcMs
   const next = programmes[i + 1]
-  return next ? next.startUtcMs : Infinity // trailing null-stop → open-ended
+  return next ? next.startUtcMs : p.startUtcMs + MAX_OPEN_MS
 }
 
 /**

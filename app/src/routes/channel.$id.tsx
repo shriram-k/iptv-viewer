@@ -31,9 +31,10 @@ export const Route = createFileRoute('/channel/$id')({
 
 function ChannelPage() {
   const { channel, schedule } = Route.useLoaderData()
-  // Absolute-UTC BroadcastEvents from the schedule (R9), else a single live event.
-  // SSR-safe: no "now" is computed, so server and client output match.
-  const events = broadcastEvents(schedule)
+  // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
+  // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),
+  // so the request-time `now` used to drop past programmes isn't hydration-diffed.
+  const events = broadcastEvents(schedule, Date.now())
   const videoObject = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',

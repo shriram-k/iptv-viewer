@@ -29,9 +29,10 @@ describe('nowNext', () => {
     expect(nowNext(sched, T0 + 30 * 60 * 1000).current?.title).toBe('Open')
   })
 
-  it('a trailing null-stop programme is open-ended (current until something else)', () => {
+  it('a trailing null-stop programme is current within the open-end cap, not forever', () => {
     const sched = [prog(-1, 0, 'Before'), prog(0, null, 'Last')]
-    expect(nowNext(sched, T0 + 5 * H).current?.title).toBe('Last')
+    expect(nowNext(sched, T0 + 2 * H).current?.title).toBe('Last') // within the ~4h cap
+    expect(nowNext(sched, T0 + 6 * H).current).toBeUndefined() // past the cap → not airing (stale-shard guard)
   })
 
   it('before the first programme → no current, next is the first', () => {

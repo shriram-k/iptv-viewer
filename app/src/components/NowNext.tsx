@@ -1,40 +1,30 @@
-import { useEffect, useState } from 'react'
 import type { Programme } from '../data/types'
 import { nowNext } from '../lib/epg'
+import { useNow } from '../lib/useNow'
 
-// Client-only "Now / Next" label. "Now" depends on the viewer's clock, so we
-// render nothing on the server / first paint and compute after mount (no
-// hydration mismatch — same pattern as LivenessHint). When no schedule exists
-// for the channel, renders nothing at all (silent degradation, origin R7).
+// Client-only "Now / Next" label. "Now" depends on the viewer's clock, so it's
+// computed against a ticking `useNow()` (null on server/first paint → no
+// hydration mismatch; advances so the label doesn't freeze mid-session). When no
+// schedule exists for the channel, renders nothing (silent degradation, R7).
 export function NowNext({ schedule, className }: { schedule?: Programme[]; className?: string }) {
-  const [labels, setLabels] = useState<{ now?: string; next?: string } | null>(null)
+  const now = useNow()
+  if (now == null || !schedule || schedule.length === 0) return null
 
-  useEffect(() => {
-    if (!schedule || schedule.length === 0) {
-      setLabels(null)
-      return
-    }
-    const { current, next } = nowNext(schedule, Date.now())
-    if (!current && !next) {
-      setLabels(null)
-      return
-    }
-    setLabels({ now: current?.title, next: next?.title })
-  }, [schedule])
+  const { current, next } = nowNext(schedule, now)
+  if (!current && !next) return null
 
-  if (!labels) return null
   // A block <span> (not <p>) so it's valid inside ChannelCard's <a>/<span> tree.
   return (
     <span className={`block truncate ${className ?? 'text-xs text-gray-500'}`} data-testid="now-next">
-      {labels.now && (
+      {current && (
         <span>
-          <span className="font-medium text-gray-700">Now:</span> {labels.now}
+          <span className="font-medium text-gray-700">Now:</span> {current.title}
         </span>
       )}
-      {labels.now && labels.next && <span aria-hidden> · </span>}
-      {labels.next && (
+      {current && next && <span aria-hidden> · </span>}
+      {next && (
         <span>
-          <span className="font-medium text-gray-700">Next:</span> {labels.next}
+          <span className="font-medium text-gray-700">Next:</span> {next.title}
         </span>
       )}
     </span>

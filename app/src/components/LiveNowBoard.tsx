@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { EpgShard, EpgMeta, Programme } from '../data/types'
+import type { EpgShard, EpgMeta } from '../data/types'
 import { currentlyAiring, boardEligible } from '../lib/epg'
+import { useNow } from '../lib/useNow'
 
 // "Live now" board (origin R5/R6/R8). Client-only: which channels are airing now
-// depends on the viewer's clock, and the coverage gate must not bake a server
-// "now" into SSR HTML. Renders nothing unless the scope passes the coverage +
-// min-airing gate — a covered-but-quiet scope (late night) shows no board, never
-// an empty grid (R6b).
+// depends on the viewer's clock (a ticking useNow, so it advances mid-session),
+// and the coverage gate must not bake a server "now" into SSR HTML. Renders
+// nothing unless the scope passes the coverage + min-airing gate — a covered-
+// but-quiet scope (late night) shows no board, never an empty grid (R6b).
+const MAX_ROWS = 12 // a curated highlight, not a full duplicate of the channel grid
+
 export function LiveNowBoard({
   shard,
   meta,
@@ -19,18 +21,13 @@ export function LiveNowBoard({
   coverage: number
   nameById: Record<string, string>
 }) {
-  const [airing, setAiring] = useState<Array<{ channelId: string; current: Programme }> | null>(null)
+  const now = useNow()
+  if (now == null || !meta) return null
 
-  useEffect(() => {
-    if (!meta) {
-      setAiring(null)
-      return
-    }
-    const a = currentlyAiring(shard, Date.now())
-    setAiring(boardEligible(meta, coverage, a.length) ? a : null)
-  }, [shard, meta, coverage])
+  const airing = currentlyAiring(shard, now)
+  if (!boardEligible(meta, coverage, airing.length)) return null
 
-  if (!airing || airing.length === 0) return null
+  const rows = airing.slice(0, MAX_ROWS)
 
   return (
     <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4" data-testid="live-now-board">
@@ -38,7 +35,7 @@ export function LiveNowBoard({
         <span className="inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden /> Live now
       </h2>
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {airing.map(({ channelId, current }) => (
+        {rows.map(({ channelId, current }) => (
           <li key={channelId}>
             <Link
               to="/channel/$id"

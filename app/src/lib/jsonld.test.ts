@@ -19,38 +19,47 @@ describe('broadcastEvents', () => {
     { startUtcMs: stop, stopUtcMs: null, title: 'The Film' },
   ]
 
-  it('builds BroadcastEvents with absolute ISO-UTC times', () => {
-    const events = broadcastEvents(sched)
+  it('builds BroadcastEvents with absolute ISO-UTC times, live flag on the airing one', () => {
+    const events = broadcastEvents(sched, start + 60_000) // 14:31 → first is airing
     expect(events).toHaveLength(2)
     expect(events[0]['@type']).toBe('BroadcastEvent')
     expect(events[0].name).toBe('News at Six')
     expect(events[0].startDate).toBe('2026-06-30T14:30:00.000Z')
     expect(events[0].endDate).toBe('2026-06-30T15:00:00.000Z')
+    expect(events[0].isLiveBroadcast).toBe(true)
+    expect(events[1].isLiveBroadcast).toBe(false) // upcoming, not live
+  })
+
+  it('drops already-finished programmes (no stale "live" rich results)', () => {
+    // now is after the first programme ended → only the second remains.
+    const events = broadcastEvents(sched, stop + 60_000)
+    expect(events).toHaveLength(1)
+    expect(events[0].name).toBe('The Film')
   })
 
   it('omits endDate when stop is null (open-ended)', () => {
-    const events = broadcastEvents(sched)
+    const events = broadcastEvents(sched, start)
     expect(events[1].endDate).toBeUndefined()
     expect(events[1].startDate).toBe('2026-06-30T15:00:00.000Z')
   })
 
   it('caps the number of events', () => {
     const many: Programme[] = Array.from({ length: 10 }, (_, i) => ({ startUtcMs: start + i * 3600_000, stopUtcMs: null, title: `P${i}` }))
-    expect(broadcastEvents(many, 3)).toHaveLength(3)
+    expect(broadcastEvents(many, start, 3)).toHaveLength(3)
   })
 
   it('returns [] for no schedule (so the caller omits the property)', () => {
-    expect(broadcastEvents(null)).toEqual([])
-    expect(broadcastEvents([])).toEqual([])
-    expect(broadcastEvents(undefined)).toEqual([])
+    expect(broadcastEvents(null, start)).toEqual([])
+    expect(broadcastEvents([], start)).toEqual([])
+    expect(broadcastEvents(undefined, start)).toEqual([])
   })
 
-  it('output is identical across calls (absolute times, no "now")', () => {
-    expect(broadcastEvents(sched)).toEqual(broadcastEvents(sched))
+  it('output is identical for a fixed now (absolute times)', () => {
+    expect(broadcastEvents(sched, start)).toEqual(broadcastEvents(sched, start))
   })
 
   it('a title with </script> is neutralized once serialized via toJsonLd', () => {
-    const events = broadcastEvents([{ startUtcMs: start, stopUtcMs: stop, title: 'X</script>' }])
+    const events = broadcastEvents([{ startUtcMs: start, stopUtcMs: stop, title: 'X</script>' }], start)
     expect(toJsonLd(events)).not.toContain('</script>')
   })
 })

@@ -11,10 +11,15 @@ export const Route = createFileRoute('/category/$slug')({
     const [refs, index, epgMeta] = await Promise.all([getCategory(store, params.slug), getChannelIndex(store), getEpgMeta(store)])
     const items = refs.map((r) => ({ id: r.id, country: r.country, name: index[r.id]?.name ?? r.id }))
 
-    // EPG is sharded per country; a category spans countries, so fetch each
-    // distinct country's shard once and union the entries for this category's
-    // channels. Category coverage is computed here (epg-meta only has per-country).
-    const countries = [...new Set(refs.map((r) => r.country))]
+    // EPG is sharded per country; a category spans countries. Only fetch shards
+    // for countries that actually have EPG coverage (per epg-meta) — avoids N
+    // pointless KV reads for EPG-less countries on a broad category, and keeps
+    // category coverage from being diluted by those countries (which would hide
+    // the board even when the covered slice is airing).
+    const covered = new Set(
+      [...new Set(refs.map((r) => r.country))].filter((c) => epgMeta?.coverage[c] != null),
+    )
+    const countries = [...covered]
     const shards = await Promise.all(countries.map((c) => getEpgShard(store, c)))
     const byCountry: Record<string, EpgShard> = Object.fromEntries(countries.map((c, i) => [c, shards[i]]))
     const epg: EpgShard = {}
@@ -22,7 +27,9 @@ export const Route = createFileRoute('/category/$slug')({
       const sched = byCountry[r.country]?.[r.id]
       if (sched) epg[r.id] = sched
     }
-    const coverage = items.length ? Object.keys(epg).length / items.length : 0
+    // Coverage denominator = this category's channels in covered countries only.
+    const relevant = items.filter((it) => covered.has(it.country))
+    const coverage = relevant.length ? Object.keys(epg).length / relevant.length : 0
     return { slug: params.slug, items, epg, epgMeta, coverage }
   },
   head: ({ params }) => ({ meta: [{ title: `${params.slug} channels — free live TV guide` }] }),
