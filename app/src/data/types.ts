@@ -41,3 +41,24 @@ export interface Meta {
   generatedAt: string
   counts: { channels: number; countries: number; categories: number }
 }
+
+// --- EPG (program guide) — written by the separate EPG job under epg:* keys.
+// Times are absolute UTC ms (normalized at ingestion); "now" is computed
+// client-side against the viewer's clock. See the EPG plan / pipeline epg/*.
+
+export interface Programme {
+  startUtcMs: number
+  stopUtcMs: number | null
+  title: string
+  category?: string
+}
+
+/** One country's compact schedule: channel id → its programmes (bracketed window). */
+export type EpgShard = Record<string, Programme[]>
+
+export interface EpgMeta {
+  generatedAt: string
+  /** Per-country coverage fraction (channels-with-schedule / scope channels). */
+  coverage: Record<string, number>
+  config: { coverageThreshold: number; minAiring: number; bracketHours: number }
+}

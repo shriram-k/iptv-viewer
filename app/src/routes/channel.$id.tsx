@@ -1,15 +1,21 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { getStore } from '../data/store'
-import { getChannel } from '../data/kv'
+import { getChannel, getEpgShard } from '../data/kv'
 import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
 import { LivenessHint } from '../components/LivenessHint'
+import { NowNext } from '../components/NowNext'
+import { broadcastEvents } from '../lib/jsonld'
 
 export const Route = createFileRoute('/channel/$id')({
   loader: async ({ params }) => {
-    const channel = await getChannel(getStore(), params.id)
+    const store = getStore()
+    const channel = await getChannel(store, params.id)
     if (!channel) throw notFound()
-    return { channel }
+    // EPG schedule (absolute UTC times) fetched server-side; now/next is computed
+    // client-side. Absent country/coverage → empty → labels silently omitted.
+    const schedule = channel.country ? (await getEpgShard(store, channel.country))[channel.id] : undefined
+    return { channel, schedule: schedule ?? null }
   },
   head: ({ loaderData }) => ({
     meta: [{ title: loaderData ? `${loaderData.channel.name} — watch live` : 'Channel' }],
@@ -24,7 +30,11 @@ export const Route = createFileRoute('/channel/$id')({
 })
 
 function ChannelPage() {
-  const { channel } = Route.useLoaderData()
+  const { channel, schedule } = Route.useLoaderData()
+  // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
+  // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),
+  // so the request-time `now` used to drop past programmes isn't hydration-diffed.
+  const events = broadcastEvents(schedule, Date.now())
   const videoObject = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -32,7 +42,7 @@ function ChannelPage() {
     description: `Watch ${channel.name} live`,
     thumbnailUrl: channel.logo ?? undefined,
     contentUrl: channel.streams[0]?.url,
-    publication: { '@type': 'BroadcastEvent', isLiveBroadcast: true },
+    publication: events.length > 0 ? events : { '@type': 'BroadcastEvent', isLiveBroadcast: true },
   }
   // Mobile: player above the fold (rendered before the metadata block).
   return (
@@ -49,6 +59,7 @@ function ChannelPage() {
       </nav>
       <h1 className="mb-3 text-xl font-bold">{channel.name}</h1>
       <Player channel={channel} />
+      <NowNext schedule={schedule ?? undefined} className="mt-3 text-sm text-gray-600" />
       <section className="mt-4 flex items-center gap-3">
         {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded object-contain" />}
         <div className="text-sm text-gray-600">

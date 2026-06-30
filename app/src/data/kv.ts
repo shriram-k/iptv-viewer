@@ -3,7 +3,7 @@
 // (in-memory fixture). Getters are pure over the store, so they're unit-testable.
 
 import { kvKeys } from './keys'
-import type { Channel, CategoryRef, ChannelIndex, Meta } from './types'
+import type { Channel, CategoryRef, ChannelIndex, Meta, EpgShard, EpgMeta } from './types'
 
 /** Minimal read surface both KV and the fixture satisfy. */
 export interface SnapshotStore {
@@ -48,4 +48,14 @@ export async function getChannel(store: SnapshotStore, id: string): Promise<Chan
   if (!entry) return null
   const channels = await getCountry(store, entry.country)
   return channels.find((c) => c.id === id) ?? null
+}
+
+/** One country's EPG schedule shard; `{}` when absent (silent degradation). */
+export async function getEpgShard(store: SnapshotStore, code: string): Promise<EpgShard> {
+  return (await readJson<EpgShard>(store, kvKeys.epg(code))) ?? {}
+}
+
+/** EPG coverage + config; null when EPG hasn't been published. */
+export function getEpgMeta(store: SnapshotStore): Promise<EpgMeta | null> {
+  return readJson<EpgMeta>(store, kvKeys.epgMeta())
 }
