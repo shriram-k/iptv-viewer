@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { parseXmltvTime, parseXmltv } = require('../src/epg/xmltv');
+const { parseXmltvTime, parseXmltv, parseXmltvChannels } = require('../src/epg/xmltv');
 
 // --- Time normalization (the silent-failure epicenter — tested first) --------
 
@@ -95,4 +95,16 @@ test('parseXmltv: malformed/empty document returns []', () => {
   assert.deepEqual(parseXmltv(''), []);
   assert.deepEqual(parseXmltv('<tv></tv>'), []);
   assert.deepEqual(parseXmltv('not xml at all'), []);
+});
+
+test('parseXmltvChannels: extracts id → display-name map', () => {
+  const chans = parseXmltvChannels(DOC);
+  assert.equal(chans.length, 1);
+  assert.deepEqual(chans[0], { id: 'bbcone.uk', name: 'BBC One' });
+});
+
+test('parseXmltvChannels: decodes entities and handles empty doc', () => {
+  const doc = '<tv><channel id="9"><display-name>A &amp; B</display-name></channel></tv>';
+  assert.deepEqual(parseXmltvChannels(doc), [{ id: '9', name: 'A & B' }]);
+  assert.deepEqual(parseXmltvChannels(''), []);
 });

@@ -47,6 +47,9 @@ function pickTitle(titles, lang) {
   return (en || titles[0]).text;
 }
 
+const CHANNEL_RE = /<channel\b([^>]*)>([\s\S]*?)<\/channel>/g;
+const DISPLAY_NAME_RE = /<display-name\b[^>]*>([\s\S]*?)<\/display-name>/;
+
 const PROGRAMME_RE = /<programme\b([^>]*)>([\s\S]*?)<\/programme>/g;
 const ATTR_RE = /(\w[\w-]*)="([^"]*)"/g;
 const TITLE_RE = /<title\b([^>]*)>([\s\S]*?)<\/title>/g;
@@ -57,6 +60,26 @@ function attrs(s) {
   let m;
   ATTR_RE.lastIndex = 0;
   while ((m = ATTR_RE.exec(s))) out[m[1]] = m[2];
+  return out;
+}
+
+/**
+ * Parse the `<channel id><display-name>` map from an XMLTV document.
+ * Source feeds (e.g. epg.pw) key programmes by their own channel id, so we need
+ * the id→name map to bridge those ids to our catalog by channel name.
+ * @returns {Array<{id:string, name:string}>}
+ */
+function parseXmltvChannels(doc) {
+  if (typeof doc !== 'string' || doc.length === 0) return [];
+  const out = [];
+  let cm;
+  CHANNEL_RE.lastIndex = 0;
+  while ((cm = CHANNEL_RE.exec(doc))) {
+    const id = attrs(cm[1]).id;
+    if (!id) continue;
+    const nameM = cm[2].match(DISPLAY_NAME_RE);
+    out.push({ id, name: nameM ? decodeEntities(nameM[1]).trim() : '' });
+  }
   return out;
 }
 
@@ -105,4 +128,4 @@ function parseXmltv(doc, opts = {}) {
   return out;
 }
 
-module.exports = { parseXmltv, parseXmltvTime, decodeEntities };
+module.exports = { parseXmltv, parseXmltvChannels, parseXmltvTime, decodeEntities };
