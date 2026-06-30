@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { fixtureStore } from './fixture'
-import { getMeta, getCountry, getCategory, getChannelIndex, getChannel, kvStore } from './kv'
+import { getMeta, getCountry, getCategory, getChannel, getEpgShard, getEpgMeta, kvStore } from './kv'
+import { kvKeys } from './keys'
 
 const store = fixtureStore()
 
@@ -46,5 +47,34 @@ describe('KV data layer (fixture)', () => {
     const bad = kvStore({ get: async () => '{not json' })
     expect(await getMeta(bad)).toBeNull()
     expect(await getCountry(bad, 'gb')).toEqual([])
+  })
+
+  it('reads an EPG shard for a covered country', async () => {
+    const epg = await getEpgShard(store, 'in')
+    expect(Object.keys(epg)).toContain('NDTV.in')
+    expect(epg['NDTV.in'][0]).toHaveProperty('startUtcMs')
+    expect(epg['NDTV.in'][0]).toHaveProperty('title')
+  })
+
+  it('EPG shard for an uncovered country → {} (silent degradation)', async () => {
+    expect(await getEpgShard(store, 'gb')).toEqual({})
+  })
+
+  it('reads EPG meta (coverage + config)', async () => {
+    const meta = await getEpgMeta(store)
+    expect(meta?.coverage.in).toBeGreaterThan(0)
+    expect(meta?.config.coverageThreshold).toBeTypeOf('number')
+  })
+
+  it('malformed EPG value → {} / null, never thrown', async () => {
+    const bad = kvStore({ get: async () => 'nope' })
+    expect(await getEpgShard(bad, 'in')).toEqual({})
+    expect(await getEpgMeta(bad)).toBeNull()
+  })
+
+  it('EPG key builders match the pipeline producer contract', () => {
+    // Mirror of pipeline/src/schema.js kvKey.epg/epgMeta — a drift guard.
+    expect(kvKeys.epg('GB')).toBe('epg:gb')
+    expect(kvKeys.epgMeta()).toBe('epg-meta')
   })
 })

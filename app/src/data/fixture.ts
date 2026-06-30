@@ -24,6 +24,21 @@ const SUN = {
   streams: [stream('https://example.com/suntv.m3u8', 'timeout')],
 }
 
+// A small now-relative EPG schedule so dev always shows a live now/next + board.
+// (Fixture is dev/test only; now/next correctness is tested deterministically in
+// lib/epg.test.ts with an injected `now`.) India gets a schedule; GB gets none,
+// to exercise silent degradation.
+const HOUR = 3600_000
+function schedule(now: number, titles: string[]): { startUtcMs: number; stopUtcMs: number; title: string }[] {
+  // titles[1] is "now"; one slot before, the rest after — each one hour long.
+  return titles.map((title, i) => ({ startUtcMs: now + (i - 1) * HOUR, stopUtcMs: now + i * HOUR, title }))
+}
+const NOW = Date.now()
+const EPG_IN = {
+  'NDTV.in': schedule(NOW, ['NDTV Newshour', 'NDTV Live at Now', 'The Big Fight', 'Prime Time']),
+  'SunTV.in': schedule(NOW, ['Morning Serial', 'Sun Now Showing', 'Evening Movie', 'Late Night']),
+}
+
 const DATA: Record<string, unknown> = {
   [kvKeys.meta()]: { version: 1, generatedAt: '2026-06-29T00:00:00Z', counts: { channels: 3, countries: 2, categories: 2 } },
   [kvKeys.country('gb')]: [BBC],
@@ -34,6 +49,13 @@ const DATA: Record<string, unknown> = {
     'BBCNews.uk': { country: 'gb', categories: ['news'], name: 'BBC News' },
     'NDTV.in': { country: 'in', categories: ['news'], name: 'NDTV 24x7' },
     'SunTV.in': { country: 'in', categories: ['entertainment'], name: 'Sun TV' },
+  },
+  [kvKeys.epg('in')]: EPG_IN,
+  [kvKeys.epgMeta()]: {
+    generatedAt: new Date(NOW).toISOString(),
+    coverage: { in: 0.5 },
+    // minAiring 2 so the 2-channel fixture board renders in dev.
+    config: { coverageThreshold: 0.2, minAiring: 2, bracketHours: 36 },
   },
 }
 
