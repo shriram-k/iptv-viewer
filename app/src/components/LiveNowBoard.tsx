@@ -30,22 +30,25 @@ export function LiveNowBoard({
   const rows = airing.slice(0, MAX_ROWS)
 
   return (
-    <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4" data-testid="live-now-board">
-      <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-        <span className="inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden /> Live now
+    <section
+      className="mb-8 rounded-2xl border border-accent/20 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-accent)6%,var(--color-surface)),var(--color-surface))] p-5"
+      data-testid="live-now-board"
+    >
+      <h2 className="mb-4 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-[0.16em] text-accent-ink">
+        <span className="live-dot inline-block h-2 w-2 rounded-full bg-accent" aria-hidden /> Live now
       </h2>
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
         {rows.map(({ channelId, current }) => (
           <li key={channelId}>
             <Link
               to="/channel/$id"
               params={{ id: channelId }}
-              className="flex items-center gap-2 rounded p-2 hover:bg-white focus:outline focus:outline-2 focus:outline-blue-500"
+              className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">LIVE</span>
+              <span className="rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wide text-white">LIVE</span>
               <span className="min-w-0 flex-1 truncate">
-                <span className="font-medium">{nameById[channelId] ?? channelId}</span>
-                <span className="text-gray-500"> — {current.title}</span>
+                <span className="font-medium text-ink">{nameById[channelId] ?? channelId}</span>
+                <span className="text-muted"> — {current.title}</span>
               </span>
             </Link>
           </li>

@@ -1,5 +1,22 @@
-
 @import "tailwindcss";
+
+/* ---- Design tokens: a warm "broadcast listings" palette ------------------- */
+/* Near-black ink on warm paper, one confident broadcast-red accent (unifying
+   the existing LIVE red). Bricolage Grotesque display over Hanken Grotesk body,
+   system mono for codes/times/status. */
+@theme {
+  --color-paper: #f7f4ee;
+  --color-surface: #fffdf9;
+  --color-ink: #1b1720;
+  --color-muted: #6c655c;
+  --color-line: #e6e0d6;
+  --color-accent: #e0212f;        /* broadcast red — fills, dots, active */
+  --color-accent-ink: #bf1421;    /* darker red — small text / links (AA) */
+
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+}
 
 * {
   box-sizing: border-box;
@@ -13,5 +30,45 @@ body,
 
 body {
   margin: 0;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+/* Display headings get the grotesk + tighter tracking. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* ---- Motion: entrance stagger, hover lift, live pulse -------------------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered entrance for grids/lists — apply .rise-in to a container and each
+   child animates in sequence via --i. */
+.rise-in > * {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+@keyframes live-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.live-dot {
+  animation: live-pulse 2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in > *,
+  .live-dot {
+    animation: none;
+  }
+}

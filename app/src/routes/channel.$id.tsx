@@ -46,31 +46,31 @@ function ChannelPage() {
   }
   // Mobile: player above the fold (rendered before the metadata block).
   return (
-    <main className="mx-auto max-w-3xl p-4 sm:p-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       <StructuredData data={videoObject} />
-      <nav aria-label="Breadcrumb" className="mb-3 text-sm text-gray-500">
-        <Link to="/" className="hover:underline">Home</Link>
+      <nav aria-label="Breadcrumb" className="mb-4 font-mono text-xs uppercase tracking-wide text-muted">
+        <Link to="/" className="transition hover:text-accent-ink">Home</Link>
         {channel.country && (
           <>
-            {' '}<span aria-hidden>/</span>{' '}
-            <Link to="/country/$code" params={{ code: channel.country }} className="hover:underline">{channel.country.toUpperCase()}</Link>
+            {' '}<span aria-hidden className="text-line">/</span>{' '}
+            <Link to="/country/$code" params={{ code: channel.country }} className="transition hover:text-accent-ink">{channel.country.toUpperCase()}</Link>
           </>
-        )}{' '}<span aria-hidden>/</span> {channel.name}
+        )}{' '}<span aria-hidden className="text-line">/</span> <span className="text-ink">{channel.name}</span>
       </nav>
-      <h1 className="mb-3 text-xl font-bold">{channel.name}</h1>
+      <h1 className="mb-4 text-2xl font-extrabold sm:text-3xl">{channel.name}</h1>
       <Player channel={channel} />
-      <NowNext schedule={schedule ?? undefined} className="mt-3 text-sm text-gray-600" />
-      <section className="mt-4 flex items-center gap-3">
-        {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded object-contain" />}
-        <div className="text-sm text-gray-600">
-          <p>{[channel.country?.toUpperCase(), ...channel.categories].filter(Boolean).join(' · ')}</p>
+      <NowNext schedule={schedule ?? undefined} className="mt-4 text-sm text-muted" />
+      <section className="mt-5 flex items-center gap-3 border-t border-line pt-5">
+        {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded-md bg-white object-contain p-0.5 ring-1 ring-line" />}
+        <div className="text-sm">
+          <p className="font-mono text-xs uppercase tracking-wide text-muted">{[channel.country?.toUpperCase(), ...channel.categories].filter(Boolean).join(' · ')}</p>
           <LivenessHint stream={channel.streams[0]} />
         </div>
       </section>
       {channel.categories[0] && (
-        <p className="mt-4 text-sm">
+        <p className="mt-5 text-sm text-muted">
           More:{' '}
-          <Link to="/category/$slug" params={{ slug: channel.categories[0] }} className="text-blue-600 hover:underline">{channel.categories[0]} channels</Link>
+          <Link to="/category/$slug" params={{ slug: channel.categories[0] }} className="font-medium text-accent-ink underline decoration-accent/30 underline-offset-2 hover:decoration-accent">{channel.categories[0]} channels</Link>
         </p>
       )}
     </main>

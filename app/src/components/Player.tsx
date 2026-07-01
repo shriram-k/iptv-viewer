@@ -232,13 +232,14 @@ export function Player({ channel }: { channel: Channel }) {
   }, [channel.id, retryToken])
 
   if (!hasStreams) {
-    return <p className="rounded bg-gray-100 p-4 text-sm text-gray-600">No stream available for this channel.</p>
+    return <p className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">No stream available for this channel.</p>
   }
 
   if (status === 'failed') {
     return (
-      <div className="overflow-hidden rounded-lg bg-gray-900 p-4 text-sm text-gray-200" data-testid="player">
-        <p role="status" data-testid="player-error">
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 rounded-xl bg-ink p-6 text-center" data-testid="player">
+        <span aria-hidden className="font-mono text-2xl text-white/25">— no signal —</span>
+        <p role="status" data-testid="player-error" className="max-w-sm text-sm text-white/80">
           {messageFor(failureClass)}
         </p>
         <button
@@ -248,7 +249,7 @@ export function Player({ channel }: { channel: Channel }) {
             setRetryToken((t) => t + 1)
           }}
           data-testid="player-retry"
-          className="mt-3 rounded bg-gray-700 px-3 py-1 text-white hover:bg-gray-600 focus:outline focus:outline-2 focus:outline-blue-400"
+          className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
           Try again
         </button>
@@ -257,14 +258,14 @@ export function Player({ channel }: { channel: Channel }) {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-lg bg-black" data-testid="player">
+    <div className="relative overflow-hidden rounded-xl bg-black shadow-[0_10px_40px_-20px_rgba(27,23,32,0.6)]" data-testid="player">
       <video ref={videoRef} controls playsInline autoPlay muted className="aspect-video w-full" />
       {status === 'playing' && muted && (
         <button
           type="button"
           onClick={() => setMuted(false)}
           data-testid="player-unmute"
-          className="absolute bottom-3 right-3 rounded bg-black/70 px-3 py-1 text-sm text-white hover:bg-black/90 focus:outline focus:outline-2 focus:outline-blue-400"
+          className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1 text-sm font-medium text-white backdrop-blur transition hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
           Unmute
         </button>

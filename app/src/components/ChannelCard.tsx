@@ -15,7 +15,7 @@ function hueFromName(name: string): number {
 function Liveness({ channel }: { channel: Channel }) {
   // Best-effort hint only; suppress when unknown or known-dead (no false "LIVE").
   if (!isPlausiblyLive(channel.streams[0]?.status)) return null
-  return <span aria-label="recently online" title="recently online" className="inline-block h-2 w-2 rounded-full bg-green-500" />
+  return <span aria-label="recently online" title="recently online" className="live-dot inline-block h-2 w-2 shrink-0 rounded-full bg-accent" />
 }
 
 function Logo({ channel }: { channel: Channel }) {
@@ -23,7 +23,7 @@ function Logo({ channel }: { channel: Channel }) {
   const initials = (channel.name || channel.id).slice(0, 2).toUpperCase()
   if (!channel.logo) {
     return (
-      <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded text-xs font-bold text-white" style={{ background: `hsl(${hue} 55% 45%)` }}>
+      <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md font-display text-sm font-bold text-white" style={{ background: `hsl(${hue} 45% 42%)` }}>
         {initials}
       </span>
     )
@@ -33,14 +33,14 @@ function Logo({ channel }: { channel: Channel }) {
       src={channel.logo}
       alt=""
       loading="lazy"
-      className="h-10 w-10 rounded object-contain"
+      className="h-11 w-11 shrink-0 rounded-md bg-white object-contain p-0.5 ring-1 ring-line"
       onError={(e) => {
         // Swap a broken logo for the deterministic initial avatar.
         const el = e.currentTarget
         el.style.display = 'none'
         el.insertAdjacentHTML(
           'afterend',
-          `<span aria-hidden class="flex h-10 w-10 items-center justify-center rounded text-xs font-bold text-white" style="background:hsl(${hue} 55% 45%)">${initials}</span>`,
+          `<span aria-hidden class="flex h-11 w-11 shrink-0 items-center justify-center rounded-md font-display text-sm font-bold text-white" style="background:hsl(${hue} 45% 42%)">${initials}</span>`,
         )
       }}
     />
@@ -52,22 +52,23 @@ export function ChannelCard({ channel, mode = 'full', schedule }: { channel: Cha
     <Link
       to="/channel/$id"
       params={{ id: channel.id }}
-      className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 focus:outline focus:outline-2 focus:outline-blue-500"
+      className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-ink/25 hover:shadow-[0_6px_20px_-12px_rgba(27,23,32,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       data-testid="channel-card"
     >
       <Logo channel={channel} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate font-medium">{channel.name || channel.id}</span>
+          <span className="truncate font-medium text-ink">{channel.name || channel.id}</span>
           <Liveness channel={channel} />
         </span>
         {mode === 'full' && (
-          <span className="mt-0.5 block truncate text-xs text-gray-500">
+          <span className="mt-0.5 block truncate font-mono text-xs uppercase tracking-wide text-muted">
             {[channel.country?.toUpperCase(), channel.categories[0]].filter(Boolean).join(' · ')}
           </span>
         )}
-        {mode === 'full' && <NowNext schedule={schedule} />}
+        {mode === 'full' && <NowNext schedule={schedule} className="mt-1 text-xs text-muted" />}
       </span>
+      <span aria-hidden className="font-display text-lg text-line transition group-hover:translate-x-0.5 group-hover:text-accent">→</span>
     </Link>
   )
 }

@@ -15,7 +15,7 @@ export function LivenessHint({ stream }: { stream: Stream | undefined }) {
 
   if (!text) return null
   return (
-    <p className="text-xs text-gray-400" title="best-effort — streams are checked about daily">
+    <p className="mt-0.5 font-mono text-xs text-muted" title="best-effort — streams are checked about daily">
       {text}
     </p>
   )
