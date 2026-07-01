@@ -7,24 +7,40 @@ import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { getStore, type AppEnv } from './store'
 import { getCategory, getChannel, getChannelIndex, getCountry, getEpgMeta, getEpgShard } from './kv'
-import type { EpgShard } from './types'
+import type { ChannelIndex, EpgShard } from './types'
 
 // getStore ignores env under `vite dev` (returns the fixture); in the built Worker
 // it reads the KV binding. `env` is a per-isolate proxy resolved per request here.
 const store = () => getStore(env as unknown as AppEnv)
 
-export const fetchHomeData = createServerFn({ method: 'GET' }).handler(async () => {
-  const index = await getChannelIndex(store())
+/** Distinct, alphabetically-sorted country codes + category slugs across the index. */
+function deriveFacets(index: ChannelIndex): { countries: string[]; categories: string[] } {
   const countries = new Set<string>()
   const categories = new Set<string>()
   for (const entry of Object.values(index)) {
     if (entry.country) countries.add(entry.country)
     for (const c of entry.categories) categories.add(c)
   }
-  return { countries: [...countries].sort(), categories: [...categories].sort(), total: Object.keys(index).length }
+  return { countries: [...countries].sort(), categories: [...categories].sort() }
+}
+
+export const fetchHomeData = createServerFn({ method: 'GET' }).handler(async () => {
+  const index = await getChannelIndex(store())
+  return { ...deriveFacets(index), total: Object.keys(index).length }
 })
 
 export const fetchChannelIndex = createServerFn({ method: 'GET' }).handler(async () => getChannelIndex(store()))
+
+/** Resolve only the requested channel ids → their index entries (small payload for
+ *  the client rails, rather than shipping the whole index). */
+export const fetchChannelsByIds = createServerFn({ method: 'GET' })
+  .inputValidator((ids: string[]) => ids)
+  .handler(async ({ data: ids }) => {
+    const index = await getChannelIndex(store())
+    const out: ChannelIndex = {}
+    for (const id of ids) if (index[id]) out[id] = index[id]
+    return out
+  })
 
 export const fetchCountryData = createServerFn({ method: 'GET' })
   .inputValidator((code: string) => code)
@@ -43,7 +59,8 @@ export const fetchCategoryData = createServerFn({ method: 'GET' })
 
     // EPG is sharded per country; only fetch shards for covered countries (avoids
     // pointless reads and keeps category coverage from being diluted by EPG-less ones).
-    const covered = new Set([...new Set(refs.map((r) => r.country))].filter((c) => epgMeta?.coverage[c] != null))
+    const covered = new Set<string>()
+    for (const r of refs) if (epgMeta?.coverage[r.country] != null) covered.add(r.country)
     const countries = [...covered]
     const shards = await Promise.all(countries.map((c) => getEpgShard(s, c)))
     const byCountry: Record<string, EpgShard> = Object.fromEntries(countries.map((c, i) => [c, shards[i]]))
@@ -72,12 +89,9 @@ export const fetchSearchData = createServerFn({ method: 'GET' })
   .handler(async ({ data: rawQ }) => {
     const q = rawQ.trim().toLowerCase()
     const index = await getChannelIndex(store())
-    const countries = new Set<string>()
-    const categories = new Set<string>()
+    const facets = deriveFacets(index) // shared, sorted — same ordering as home
     const channels: { id: string; name: string; country: string }[] = []
     for (const [id, entry] of Object.entries(index)) {
-      if (entry.country) countries.add(entry.country)
-      for (const c of entry.categories) categories.add(c)
       if (q && (entry.name.toLowerCase().includes(q) || id.toLowerCase().includes(q))) {
         channels.push({ id, name: entry.name, country: entry.country })
       }
@@ -85,7 +99,7 @@ export const fetchSearchData = createServerFn({ method: 'GET' })
     return {
       q: rawQ,
       channels,
-      countries: q ? [...countries].filter((c) => c.includes(q)) : [],
-      categories: q ? [...categories].filter((c) => c.toLowerCase().includes(q)) : [],
+      countries: q ? facets.countries.filter((c) => c.includes(q)) : [],
+      categories: q ? facets.categories.filter((c) => c.toLowerCase().includes(q)) : [],
     }
   })

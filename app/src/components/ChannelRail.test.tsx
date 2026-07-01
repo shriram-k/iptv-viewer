@@ -2,14 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import { ChannelRail } from './ChannelRail'
 
-// Plain-anchor Link (no router) and a controlled channel index (via the server fn).
+// Plain-anchor Link (no router) and a controlled id→entry resolver (the server fn,
+// which returns only the requested ids).
 vi.mock('@tanstack/react-router', () => ({ Link: ({ children, ...p }: any) => <a {...p}>{children}</a> }))
-vi.mock('../data/server', () => ({
-  fetchChannelIndex: async () => ({
+vi.mock('../data/server', () => {
+  const ALL: Record<string, any> = {
     'BBCNews.uk': { country: 'gb', categories: ['news'], name: 'BBC News' },
     'NDTV.in': { country: 'in', categories: ['news'], name: 'NDTV 24x7' },
-  }),
-}))
+  }
+  return {
+    fetchChannelsByIds: async ({ data: ids }: { data: string[] }) =>
+      Object.fromEntries(ids.filter((id) => ALL[id]).map((id) => [id, ALL[id]])),
+  }
+})
 const rc = vi.hoisted(() => ({ killed: new Set<string>() }))
 vi.mock('../lib/useRemoteConfig', () => ({ useRemoteConfig: () => ({ announcement: '', killed: rc.killed, collections: [] }) }))
 
