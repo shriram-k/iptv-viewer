@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getStore } from '../data/store'
-import { getChannelIndex } from '../data/kv'
+import { fetchChannelIndex } from '../data/server'
 import type { Channel, ChannelIndex } from '../data/types'
 
 // Resolve a list of channel IDs (favorites, history, featured) to Channel records
@@ -8,8 +7,8 @@ import type { Channel, ChannelIndex } from '../data/types'
 // Remote Config. Shared by the home rails and the /favorites page so the id→Channel
 // contract lives in one place. Returns `loading` until the index resolves.
 //
-// Note: relies on the channel index being readable client-side (true today via the
-// bundled fixture; the KV cutover — app/DEPLOY.md — must keep it client-accessible).
+// The index is fetched through the `fetchChannelIndex` server function (a Worker
+// RPC on the client), so KV stays server-only — the client never reads the binding.
 
 /** Minimal Channel from an index entry — enough for a card (no streams/logo). */
 function toChannel(id: string, entry: ChannelIndex[string]): Channel {
@@ -20,7 +19,7 @@ export function useResolvedChannels(ids: string[]): { channels: Channel[]; loadi
   const [index, setIndex] = useState<ChannelIndex | null>(null)
   useEffect(() => {
     let cancelled = false
-    getChannelIndex(getStore()).then((idx) => {
+    fetchChannelIndex().then((idx) => {
       if (!cancelled) setIndex(idx)
     })
     return () => {

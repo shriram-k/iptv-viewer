@@ -1,38 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { getStore } from '../data/store'
-import { getCategory, getChannelIndex, getEpgShard, getEpgMeta } from '../data/kv'
+import { fetchCategoryData } from '../data/server'
 import { LiveNowBoard } from '../components/LiveNowBoard'
 import { StructuredData } from '../components/StructuredData'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
-import type { EpgShard } from '../data/types'
 
 export const Route = createFileRoute('/category/$slug')({
-  loader: async ({ params }) => {
-    const store = getStore()
-    const [refs, index, epgMeta] = await Promise.all([getCategory(store, params.slug), getChannelIndex(store), getEpgMeta(store)])
-    const items = refs.map((r) => ({ id: r.id, country: r.country, name: index[r.id]?.name ?? r.id }))
-
-    // EPG is sharded per country; a category spans countries. Only fetch shards
-    // for countries that actually have EPG coverage (per epg-meta) — avoids N
-    // pointless KV reads for EPG-less countries on a broad category, and keeps
-    // category coverage from being diluted by those countries (which would hide
-    // the board even when the covered slice is airing).
-    const covered = new Set(
-      [...new Set(refs.map((r) => r.country))].filter((c) => epgMeta?.coverage[c] != null),
-    )
-    const countries = [...covered]
-    const shards = await Promise.all(countries.map((c) => getEpgShard(store, c)))
-    const byCountry: Record<string, EpgShard> = Object.fromEntries(countries.map((c, i) => [c, shards[i]]))
-    const epg: EpgShard = {}
-    for (const r of refs) {
-      const sched = byCountry[r.country]?.[r.id]
-      if (sched) epg[r.id] = sched
-    }
-    // Coverage denominator = this category's channels in covered countries only.
-    const relevant = items.filter((it) => covered.has(it.country))
-    const coverage = relevant.length ? Object.keys(epg).length / relevant.length : 0
-    return { slug: params.slug, items, epg, epgMeta, coverage }
-  },
+  loader: async ({ params }) => fetchCategoryData({ data: params.slug }),
   head: ({ params }) => ({ meta: [{ title: `${params.slug} channels — free live TV guide` }] }),
   component: CategoryPage,
 })

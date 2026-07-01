@@ -1,31 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { getStore } from '../data/store'
-import { getChannelIndex } from '../data/kv'
+import { fetchSearchData } from '../data/server'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/search')({
   validateSearch: (search: Record<string, unknown>) => ({ q: String(search.q ?? '') }),
   loaderDeps: ({ search }) => ({ q: search.q }),
-  loader: async ({ deps }) => {
-    const q = deps.q.trim().toLowerCase()
-    const index = await getChannelIndex(getStore())
-    const countries = new Set<string>()
-    const categories = new Set<string>()
-    const channels: { id: string; name: string; country: string }[] = []
-    for (const [id, entry] of Object.entries(index)) {
-      if (entry.country) countries.add(entry.country)
-      for (const c of entry.categories) categories.add(c)
-      if (q && (entry.name.toLowerCase().includes(q) || id.toLowerCase().includes(q))) {
-        channels.push({ id, name: entry.name, country: entry.country })
-      }
-    }
-    return {
-      q: deps.q,
-      channels,
-      countries: q ? [...countries].filter((c) => c.includes(q)) : [],
-      categories: q ? [...categories].filter((c) => c.toLowerCase().includes(q)) : [],
-    }
-  },
+  loader: async ({ deps }) => fetchSearchData({ data: deps.q }),
   head: ({ loaderData }) => ({ meta: [{ title: loaderData?.q ? `Search: ${loaderData.q}` : 'Search' }] }),
   component: SearchPage,
 })

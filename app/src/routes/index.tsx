@@ -1,25 +1,11 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { getStore } from '../data/store'
-import { getChannelIndex } from '../data/kv'
+import { fetchHomeData } from '../data/server'
 import { ChannelRail } from '../components/ChannelRail'
 import { useFavorites, useHistory } from '../lib/useEngagement'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/')({
-  loader: async () => {
-    const index = await getChannelIndex(getStore())
-    const countries = new Set<string>()
-    const categories = new Set<string>()
-    for (const entry of Object.values(index)) {
-      if (entry.country) countries.add(entry.country)
-      for (const c of entry.categories) categories.add(c)
-    }
-    return {
-      countries: [...countries].sort(),
-      categories: [...categories].sort(),
-      total: Object.keys(index).length,
-    }
-  },
+  loader: async () => fetchHomeData(),
   head: () => ({ meta: [{ title: 'Free Live TV — browse channels by country & category' }] }),
   component: Home,
 })

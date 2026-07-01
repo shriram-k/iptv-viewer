@@ -1,21 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { getStore } from '../data/store'
-import { getCountry, getEpgShard, getEpgMeta } from '../data/kv'
+import { fetchCountryData } from '../data/server'
 import { ChannelCard } from '../components/ChannelCard'
 import { LiveNowBoard } from '../components/LiveNowBoard'
 import { StructuredData } from '../components/StructuredData'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/country/$code')({
-  loader: async ({ params }) => {
-    const store = getStore()
-    const [channels, epg, epgMeta] = await Promise.all([
-      getCountry(store, params.code),
-      getEpgShard(store, params.code),
-      getEpgMeta(store),
-    ])
-    return { code: params.code, channels, epg, epgMeta }
-  },
+  loader: async ({ params }) => fetchCountryData({ data: params.code }),
   head: ({ params }) => ({
     meta: [{ title: `Live TV channels in ${params.code.toUpperCase()} — free streaming guide` }],
   }),

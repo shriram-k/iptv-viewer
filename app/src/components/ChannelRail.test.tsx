@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import { ChannelRail } from './ChannelRail'
 
-// Plain-anchor Link (no router) and a controlled channel index.
+// Plain-anchor Link (no router) and a controlled channel index (via the server fn).
 vi.mock('@tanstack/react-router', () => ({ Link: ({ children, ...p }: any) => <a {...p}>{children}</a> }))
-vi.mock('../data/kv', () => ({
-  getChannelIndex: async () => ({
+vi.mock('../data/server', () => ({
+  fetchChannelIndex: async () => ({
     'BBCNews.uk': { country: 'gb', categories: ['news'], name: 'BBC News' },
     'NDTV.in': { country: 'in', categories: ['news'], name: 'NDTV 24x7' },
   }),
