@@ -10,6 +10,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { name: 'theme-color', content: '#1b1720' },
       { title: 'Free Live TV — a clean guide to free-to-air channels' },
       { name: 'description', content: 'Browse and watch free live TV channels by country and category, with what’s on now and next.' },
     ],
@@ -21,6 +22,10 @@ export const Route = createRootRoute({
         href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap',
       },
       { rel: 'stylesheet', href: appCss },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+      { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+      { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/icons/favicon-32.png' },
+      { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon-180.png' },
     ],
   }),
   shellComponent: RootDocument,
