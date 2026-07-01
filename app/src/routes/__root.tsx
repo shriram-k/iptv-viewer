@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, Link, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { Star } from 'lucide-react'
 
 import appCss from '../styles.css?url'
 
@@ -35,10 +36,17 @@ function SiteHeader() {
             Free<span className="text-accent">TV</span>
           </span>
         </Link>
+        <Link
+          to="/favorites"
+          className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:text-accent-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          activeProps={{ className: 'text-accent-ink' }}
+        >
+          <Star className="h-4 w-4" aria-hidden /> Favorites
+        </Link>
         <form
           action="/search"
           method="get"
-          className="ml-auto hidden w-full max-w-xs items-center sm:flex"
+          className="hidden w-full max-w-xs items-center sm:flex"
           role="search"
         >
           <input
