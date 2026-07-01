@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ChannelCard } from '../components/ChannelCard'
 import { useFavorites } from '../lib/useEngagement'
 import { useResolvedChannels } from '../lib/useResolvedChannels'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/favorites')({
   head: () => ({ meta: [{ title: 'Your favorites — FreeTV' }] }),
@@ -12,7 +13,8 @@ export const Route = createFileRoute('/favorites')({
 // the favorite IDs, resolve their metadata from the channel index, render a grid.
 function FavoritesPage() {
   const favorites = useFavorites()
-  const { channels, loading } = useResolvedChannels(favorites)
+  const { killed } = useRemoteConfig() // hide kill-listed channels (R8)
+  const { channels, loading } = useResolvedChannels(favorites.filter((id) => !killed.has(id)))
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">

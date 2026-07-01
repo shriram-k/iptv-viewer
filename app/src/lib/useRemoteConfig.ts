@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { deriveRcState, type RcState } from './rc'
+import { createClientOnlyFn } from '@tanstack/react-start'
+import type { RcState } from './rc'
 
 // Client-only Remote Config reader. Returns defaults on the server and first paint
 // (so SSR HTML matches — no hydration mismatch), then fills in after a single
@@ -14,21 +15,23 @@ let started = false
 const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((fn) => fn())
 
+// createClientOnlyFn marks this as browser-only: it no-ops (returns undefined) on
+// the server and satisfies TanStack Start's import guard, so the dynamically-loaded
+// firebase never enters the SSR worker bundle.
+const loadRcStateClient = createClientOnlyFn(async (): Promise<RcState | null> => {
+  const { loadRcState } = await import('./remoteConfig.client')
+  return loadRcState()
+})
+
 async function ensureLoaded(): Promise<void> {
   if (started || typeof window === 'undefined') return
   started = true
   try {
-    const { getRC } = await import('./remoteConfig.client')
-    const rc = await getRC()
-    if (!rc) return // unconfigured / unsupported → stay on defaults
-    const { fetchAndActivate, getString } = await import('firebase/remote-config')
-    await fetchAndActivate(rc)
-    shared = deriveRcState({
-      announcement: getString(rc, 'announcement'),
-      killed_channel_ids: getString(rc, 'killed_channel_ids'),
-      featured_collections: getString(rc, 'featured_collections'),
-    })
-    emit()
+    const state = await loadRcStateClient()
+    if (state) {
+      shared = state
+      emit()
+    }
   } catch {
     /* offline / throttled / misconfigured → keep defaults; site works */
   }

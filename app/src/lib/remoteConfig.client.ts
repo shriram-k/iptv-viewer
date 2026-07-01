@@ -7,8 +7,8 @@
 // they're absent, getRC() returns null → the app runs on RC defaults (no control
 // plane, fully functional).
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getRemoteConfig, isSupported, type RemoteConfig } from 'firebase/remote-config'
-import { RC_DEFAULTS } from './rc'
+import { getRemoteConfig, isSupported, fetchAndActivate, getString, type RemoteConfig } from 'firebase/remote-config'
+import { RC_DEFAULTS, deriveRcState, type RcState } from './rc'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -37,4 +37,20 @@ export function getRC(): Promise<RemoteConfig | null> {
     }
   })()
   return rcPromise
+}
+
+/**
+ * Fetch + activate RC and return the parsed state, or null when RC is off/failed.
+ * All Firebase access is confined to this .client module so the SSR-reachable
+ * useRemoteConfig hook never references firebase/* (TanStack Start import guard).
+ */
+export async function loadRcState(): Promise<RcState | null> {
+  const rc = await getRC()
+  if (!rc) return null
+  await fetchAndActivate(rc)
+  return deriveRcState({
+    announcement: getString(rc, 'announcement'),
+    killed_channel_ids: getString(rc, 'killed_channel_ids'),
+    featured_collections: getString(rc, 'featured_collections'),
+  })
 }

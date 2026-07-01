@@ -2,6 +2,7 @@ import { HeadContent, Scripts, Link, createRootRoute } from '@tanstack/react-rou
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Star } from 'lucide-react'
+import { AnnouncementBanner } from '../components/AnnouncementBanner'
 
 import appCss from '../styles.css?url'
 
@@ -88,6 +89,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="flex min-h-screen flex-col">
+        <AnnouncementBanner />
         <SiteHeader />
         <div className="flex-1">{children}</div>
         <SiteFooter />

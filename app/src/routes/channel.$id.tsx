@@ -8,6 +8,7 @@ import { LivenessHint } from '../components/LivenessHint'
 import { NowNext } from '../components/NowNext'
 import { FavoriteButton } from '../components/FavoriteButton'
 import { recordWatched } from '../lib/useEngagement'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 import { broadcastEvents } from '../lib/jsonld'
 
 export const Route = createFileRoute('/channel/$id')({
@@ -34,8 +35,13 @@ export const Route = createFileRoute('/channel/$id')({
 
 function ChannelPage() {
   const { channel, schedule } = Route.useLoaderData()
-  // Opening a channel page counts as a watch (recently-watched, client-only).
-  useEffect(() => recordWatched(channel.id), [channel.id])
+  const { killed } = useRemoteConfig()
+  const isKilled = killed.has(channel.id) // maintainer kill-switch (R8) — hide playback
+  // Opening a channel page counts as a watch (recently-watched, client-only) — but
+  // not a kill-switched one.
+  useEffect(() => {
+    if (!isKilled) recordWatched(channel.id)
+  }, [channel.id, isKilled])
   // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
   // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),
   // so the request-time `now` used to drop past programmes isn't hydration-diffed.
@@ -69,8 +75,16 @@ function ChannelPage() {
           className="mt-1 shrink-0 rounded-full border border-line p-2 text-muted transition hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
-      <Player channel={channel} />
-      <NowNext schedule={schedule ?? undefined} className="mt-4 text-sm text-muted" />
+      {isKilled ? (
+        <div className="flex aspect-video w-full flex-col items-center justify-center rounded-xl bg-ink p-6 text-center" data-testid="channel-unavailable">
+          <p className="text-sm text-white/80">This channel isn’t available.</p>
+        </div>
+      ) : (
+        <>
+          <Player channel={channel} />
+          <NowNext schedule={schedule ?? undefined} className="mt-4 text-sm text-muted" />
+        </>
+      )}
       <section className="mt-5 flex items-center gap-3 border-t border-line pt-5">
         {channel.logo && <img src={channel.logo} alt="" className="h-12 w-12 rounded-md bg-white object-contain p-0.5 ring-1 ring-line" />}
         <div className="text-sm">

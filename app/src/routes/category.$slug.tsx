@@ -3,6 +3,7 @@ import { getStore } from '../data/store'
 import { getCategory, getChannelIndex, getEpgShard, getEpgMeta } from '../data/kv'
 import { LiveNowBoard } from '../components/LiveNowBoard'
 import { StructuredData } from '../components/StructuredData'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 import type { EpgShard } from '../data/types'
 
 export const Route = createFileRoute('/category/$slug')({
@@ -37,7 +38,9 @@ export const Route = createFileRoute('/category/$slug')({
 })
 
 function CategoryPage() {
-  const { slug, items, epg, epgMeta, coverage } = Route.useLoaderData()
+  const { slug, items: allItems, epg, epgMeta, coverage } = Route.useLoaderData()
+  const { killed } = useRemoteConfig() // hide kill-listed channels (R8)
+  const items = allItems.filter((it) => !killed.has(it.id))
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',

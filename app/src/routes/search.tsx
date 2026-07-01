@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { getStore } from '../data/store'
 import { getChannelIndex } from '../data/kv'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/search')({
   validateSearch: (search: Record<string, unknown>) => ({ q: String(search.q ?? '') }),
@@ -30,7 +31,9 @@ export const Route = createFileRoute('/search')({
 })
 
 function SearchPage() {
-  const { q, channels, countries, categories } = Route.useLoaderData()
+  const { q, channels: allChannels, countries, categories } = Route.useLoaderData()
+  const { killed } = useRemoteConfig() // hide kill-listed channels (R8)
+  const channels = allChannels.filter((c) => !killed.has(c.id))
   const empty = channels.length === 0 && countries.length === 0 && categories.length === 0
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">

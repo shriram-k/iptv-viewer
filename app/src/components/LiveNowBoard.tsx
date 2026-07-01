@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { EpgShard, EpgMeta } from '../data/types'
 import { currentlyAiring, boardEligible } from '../lib/epg'
 import { useNow } from '../lib/useNow'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 // "Live now" board (origin R5/R6/R8). Client-only: which channels are airing now
 // depends on the viewer's clock (a ticking useNow, so it advances mid-session),
@@ -22,9 +23,10 @@ export function LiveNowBoard({
   nameById: Record<string, string>
 }) {
   const now = useNow()
+  const { killed } = useRemoteConfig() // hook must run before any early return
   if (now == null || !meta) return null
 
-  const airing = currentlyAiring(shard, now)
+  const airing = currentlyAiring(shard, now).filter((a) => !killed.has(a.channelId)) // R8
   if (!boardEligible(meta, coverage, airing.length)) return null
 
   const rows = airing.slice(0, MAX_ROWS)
