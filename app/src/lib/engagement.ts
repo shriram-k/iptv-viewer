@@ -3,8 +3,12 @@
 // injectable Storage so it's fully unit-testable; the client hooks (useEngagement)
 // are thin mounted-gate wrappers over a singleton created against window.localStorage.
 //
-// localStorage doesn't notify same-tab listeners, so we expose subscribe/emit —
-// favoriting on a card updates the home rail live.
+// In-memory-backed: the current lists are held in memory (seeded from storage) and
+// written through best-effort. So toggling works within the session even when
+// persistence fails (Safari private mode / quota / disabled storage) instead of
+// silently reverting, and reads are cheap (no JSON.parse per subscriber).
+// localStorage doesn't notify same-tab listeners, so we expose subscribe/emit;
+// cross-tab changes come in via the `storage` event → syncFromStorage().
 
 // Versioned keys so a future shape change resets cleanly instead of crashing on old data.
 const FAV_KEY = 'ftv:fav:v1'
@@ -29,34 +33,44 @@ export interface Engagement {
   listFavorites(): string[]
   recordWatched(id: string): void
   listHistory(): string[]
+  /** Re-seed the in-memory lists from storage (for the cross-tab `storage` event). */
+  syncFromStorage(): void
   subscribe(fn: () => void): () => void
 }
 
 /** Create an engagement store over the given Storage (window.localStorage in the app). */
 export function createEngagement(storage: Storage): Engagement {
   const listeners = new Set<() => void>()
+  let favorites = readList(storage, FAV_KEY)
+  let history = readList(storage, HIST_KEY)
+
   const emit = () => listeners.forEach((fn) => fn())
-  const write = (key: string, list: string[]) => {
+  const persist = (key: string, list: string[]) => {
     try {
       storage.setItem(key, JSON.stringify(list))
     } catch {
-      /* quota / disabled storage — favorites just won't persist */
+      /* quota / disabled storage — the in-memory value still holds for the session */
     }
-    emit()
   }
 
   return {
-    isFavorite: (id) => readList(storage, FAV_KEY).includes(id),
-    listFavorites: () => readList(storage, FAV_KEY),
+    isFavorite: (id) => favorites.includes(id),
+    listFavorites: () => favorites,
     toggleFavorite(id) {
-      const favs = readList(storage, FAV_KEY)
-      const next = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id]
-      write(FAV_KEY, next)
+      favorites = favorites.includes(id) ? favorites.filter((x) => x !== id) : [...favorites, id]
+      persist(FAV_KEY, favorites)
+      emit()
     },
-    listHistory: () => readList(storage, HIST_KEY),
+    listHistory: () => history,
     recordWatched(id) {
-      const prev = readList(storage, HIST_KEY).filter((x) => x !== id) // dedupe
-      write(HIST_KEY, [id, ...prev].slice(0, MAX_HISTORY)) // newest-first, capped
+      history = [id, ...history.filter((x) => x !== id)].slice(0, MAX_HISTORY) // newest-first, deduped, capped
+      persist(HIST_KEY, history)
+      emit()
+    },
+    syncFromStorage() {
+      favorites = readList(storage, FAV_KEY)
+      history = readList(storage, HIST_KEY)
+      emit()
     },
     subscribe(fn) {
       listeners.add(fn)

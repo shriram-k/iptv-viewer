@@ -1,36 +1,18 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { getStore } from '../data/store'
-import { getChannelIndex } from '../data/kv'
-import type { Channel, ChannelIndex } from '../data/types'
 import { ChannelCard } from '../components/ChannelCard'
 import { useFavorites } from '../lib/useEngagement'
+import { useResolvedChannels } from '../lib/useResolvedChannels'
 
 export const Route = createFileRoute('/favorites')({
   head: () => ({ meta: [{ title: 'Your favorites — FreeTV' }] }),
   component: FavoritesPage,
 })
 
-function toChannel(id: string, entry: ChannelIndex[string]): Channel {
-  return { id, name: entry.name, country: entry.country, categories: entry.categories, languages: [], logo: null, guide: null, playable: true, streams: [] }
-}
-
 // Favorites are device-local (localStorage), so this page is client-rendered: read
 // the favorite IDs, resolve their metadata from the channel index, render a grid.
 function FavoritesPage() {
   const favorites = useFavorites()
-  const [index, setIndex] = useState<ChannelIndex | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    getChannelIndex(getStore()).then((idx) => !cancelled && setIndex(idx))
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const channels = index
-    ? favorites.map((id) => (index[id] ? toChannel(id, index[id]) : null)).filter((c): c is Channel => c !== null)
-    : []
+  const { channels, loading } = useResolvedChannels(favorites)
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -41,6 +23,12 @@ function FavoritesPage() {
       {favorites.length === 0 ? (
         <p className="rounded-xl border border-line bg-surface p-6 text-muted" data-testid="favorites-empty">
           No favorites yet — tap the <span aria-hidden>★</span> star on any channel to save it here.
+        </p>
+      ) : loading ? (
+        <p className="text-muted">Loading…</p>
+      ) : channels.length === 0 ? (
+        <p className="rounded-xl border border-line bg-surface p-6 text-muted" data-testid="favorites-stale">
+          Your saved channels are no longer in the catalog.
         </p>
       ) : (
         <div className="rise-in grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="favorites-grid">

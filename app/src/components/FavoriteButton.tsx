@@ -1,16 +1,13 @@
-import { useEffect, useState } from 'react'
 import { Star } from 'lucide-react'
 import { useFavorite } from '../lib/useEngagement'
 
-// A star toggle. Client-only (renders nothing on the server / first paint — favorites
-// live in localStorage), and safe to place inside ChannelCard's <Link>: its click
-// prevents default + stops propagation so tapping the star never navigates.
+// A star toggle. `useFavorite` is SSR-safe (inactive on the server and first paint,
+// then fills in after mount from localStorage — no hydration mismatch), so the
+// button needs no separate mount gate. The click prevents default + stops
+// propagation defensively, so if it ever sits near/inside a clickable ancestor
+// tapping the star won't also activate that ancestor.
 export function FavoriteButton({ channelId, className }: { channelId: string; className?: string }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
   const { active, toggle } = useFavorite(channelId)
-
-  if (!mounted) return null
 
   return (
     <button

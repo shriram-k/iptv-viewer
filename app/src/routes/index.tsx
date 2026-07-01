@@ -23,7 +23,7 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-function Rail({ label, children }: { label: string; children: React.ReactNode }) {
+function ChipRail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">{label}</h2>
@@ -78,7 +78,7 @@ function Home() {
       </div>
 
       <div className="py-10">
-        <Rail label="Browse by country">
+        <ChipRail label="Browse by country">
           {countries.map((code, i) => (
             <Link
               key={code}
@@ -90,8 +90,8 @@ function Home() {
               {code.toUpperCase()}
             </Link>
           ))}
-        </Rail>
-        <Rail label="Browse by category">
+        </ChipRail>
+        <ChipRail label="Browse by category">
           {categories.map((slug, i) => (
             <Link
               key={slug}
@@ -103,7 +103,7 @@ function Home() {
               {slug}
             </Link>
           ))}
-        </Rail>
+        </ChipRail>
       </div>
     </main>
   )

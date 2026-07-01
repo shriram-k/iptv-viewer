@@ -9,7 +9,13 @@ import { createEngagement, type Engagement } from './engagement'
 let singleton: Engagement | null = null
 function getStore(): Engagement | null {
   if (typeof window === 'undefined') return null
-  if (!singleton) singleton = createEngagement(window.localStorage)
+  if (singleton) return singleton
+  try {
+    // Accessing window.localStorage itself can throw (blocked-storage contexts).
+    singleton = createEngagement(window.localStorage)
+  } catch {
+    return null // degrade to no favorites rather than crashing a render
+  }
   return singleton
 }
 
@@ -21,10 +27,11 @@ function useStoreList(read: (s: Engagement) => string[]): string[] {
     const update = () => setValue(read(store))
     update()
     const unsub = store.subscribe(update)
-    window.addEventListener('storage', update) // cross-tab
+    const onStorage = () => store.syncFromStorage() // cross-tab → re-seed memory + emit
+    window.addEventListener('storage', onStorage)
     return () => {
       unsub()
-      window.removeEventListener('storage', update)
+      window.removeEventListener('storage', onStorage)
     }
     // read is stable per call site; the store is a singleton — run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps

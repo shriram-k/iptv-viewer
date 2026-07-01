@@ -96,4 +96,22 @@ describe('engagement store — resilience & reactivity', () => {
     store.toggleFavorite('c')
     expect(fn).toHaveBeenCalledTimes(2) // no longer notified
   })
+
+  it('favoriting still works in-session when persistence throws (private mode / quota)', () => {
+    const throwing: Storage = { ...fakeStorage(), setItem: () => { throw new Error('QuotaExceeded') } }
+    const store = createEngagement(throwing)
+    expect(() => store.toggleFavorite('a')).not.toThrow()
+    expect(store.isFavorite('a')).toBe(true) // in-memory value holds despite the failed write
+  })
+
+  it('syncFromStorage re-seeds in-memory lists (cross-tab change) and notifies', () => {
+    const backing = fakeStorage()
+    const store = createEngagement(backing)
+    const fn = vi.fn()
+    store.subscribe(fn)
+    backing.setItem('ftv:fav:v1', JSON.stringify(['other-tab'])) // another tab wrote
+    store.syncFromStorage()
+    expect(store.listFavorites()).toEqual(['other-tab'])
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
 })
