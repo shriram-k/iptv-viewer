@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { Channel, Programme } from '../data/types'
 import { isPlausiblyLive } from '../data/status'
 import { NowNext } from './NowNext'
+import { FavoriteButton } from './FavoriteButton'
 
 type Mode = 'compact' | 'full'
 
@@ -48,27 +49,34 @@ function Logo({ channel }: { channel: Channel }) {
 }
 
 export function ChannelCard({ channel, mode = 'full', schedule }: { channel: Channel; mode?: Mode; schedule?: Programme[] }) {
+  // The favorite star is a SIBLING of the Link (not a child) — a <button> inside
+  // an <a> is invalid HTML; as a sibling it's valid and naturally doesn't navigate.
   return (
-    <Link
-      to="/channel/$id"
-      params={{ id: channel.id }}
-      className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-ink/25 hover:shadow-[0_6px_20px_-12px_rgba(27,23,32,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      data-testid="channel-card"
-    >
-      <Logo channel={channel} />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2">
-          <span className="truncate font-medium text-ink">{channel.name || channel.id}</span>
-          <Liveness channel={channel} />
-        </span>
-        {mode === 'full' && (
-          <span className="mt-0.5 block truncate font-mono text-xs uppercase tracking-wide text-muted">
-            {[channel.country?.toUpperCase(), channel.categories[0]].filter(Boolean).join(' · ')}
+    <div className="relative">
+      <Link
+        to="/channel/$id"
+        params={{ id: channel.id }}
+        className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3 pr-10 transition duration-200 hover:-translate-y-0.5 hover:border-ink/25 hover:shadow-[0_6px_20px_-12px_rgba(27,23,32,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        data-testid="channel-card"
+      >
+        <Logo channel={channel} />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate font-medium text-ink">{channel.name || channel.id}</span>
+            <Liveness channel={channel} />
           </span>
-        )}
-        {mode === 'full' && <NowNext schedule={schedule} className="mt-1 text-xs text-muted" />}
-      </span>
-      <span aria-hidden className="font-display text-lg text-line transition group-hover:translate-x-0.5 group-hover:text-accent">→</span>
-    </Link>
+          {mode === 'full' && (
+            <span className="mt-0.5 block truncate font-mono text-xs uppercase tracking-wide text-muted">
+              {[channel.country?.toUpperCase(), channel.categories[0]].filter(Boolean).join(' · ')}
+            </span>
+          )}
+          {mode === 'full' && <NowNext schedule={schedule} className="mt-1 text-xs text-muted" />}
+        </span>
+      </Link>
+      <FavoriteButton
+        channelId={channel.id}
+        className="absolute right-2 top-2 rounded-full bg-surface/80 p-1.5 text-muted backdrop-blur transition hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      />
+    </div>
   )
 }
