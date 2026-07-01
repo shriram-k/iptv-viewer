@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ChannelCard } from './ChannelCard'
 import type { Channel } from '../data/types'
+
+beforeEach(() => localStorage.clear())
 
 // Render Link as a plain anchor so the card can be tested without a router.
 vi.mock('@tanstack/react-router', () => ({
@@ -44,5 +46,14 @@ describe('ChannelCard', () => {
     const dead = channel({ streams: [{ url: 'https://x', status: 'timeout', checkedAt: null, scheme: 'https', likelyPlayable: false, quality: null }] })
     render(<ChannelCard channel={dead} mode="full" />)
     expect(screen.queryByLabelText('recently online')).toBeNull()
+  })
+
+  it('renders a favorite toggle that favorites without navigating', async () => {
+    render(<ChannelCard channel={channel()} mode="full" />)
+    const star = await screen.findByTestId('favorite-button')
+    // The card link is a separate element; the star is its sibling (valid HTML).
+    expect(screen.getByTestId('channel-card').contains(star)).toBe(false)
+    fireEvent.click(star)
+    await waitFor(() => expect(screen.getByTestId('favorite-button').getAttribute('aria-pressed')).toBe('true'))
   })
 })

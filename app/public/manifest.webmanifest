@@ -1,0 +1,16 @@
+{
+  "name": "FreeTV — Free Live TV Guide",
+  "short_name": "FreeTV",
+  "description": "A clean guide to free-to-air live TV channels by country and category.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#1b1720",
+  "background_color": "#f7f4ee",
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icons/icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "/icons/icon-512-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

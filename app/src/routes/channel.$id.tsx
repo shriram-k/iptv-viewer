@@ -3,8 +3,11 @@ import { getStore } from '../data/store'
 import { getChannel, getEpgShard } from '../data/kv'
 import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
+import { useEffect } from 'react'
 import { LivenessHint } from '../components/LivenessHint'
 import { NowNext } from '../components/NowNext'
+import { FavoriteButton } from '../components/FavoriteButton'
+import { recordWatched } from '../lib/useEngagement'
 import { broadcastEvents } from '../lib/jsonld'
 
 export const Route = createFileRoute('/channel/$id')({
@@ -31,6 +34,8 @@ export const Route = createFileRoute('/channel/$id')({
 
 function ChannelPage() {
   const { channel, schedule } = Route.useLoaderData()
+  // Opening a channel page counts as a watch (recently-watched, client-only).
+  useEffect(() => recordWatched(channel.id), [channel.id])
   // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
   // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),
   // so the request-time `now` used to drop past programmes isn't hydration-diffed.
@@ -57,7 +62,13 @@ function ChannelPage() {
           </>
         )}{' '}<span aria-hidden className="text-line">/</span> <span className="text-ink">{channel.name}</span>
       </nav>
-      <h1 className="mb-4 text-2xl font-extrabold sm:text-3xl">{channel.name}</h1>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-extrabold sm:text-3xl">{channel.name}</h1>
+        <FavoriteButton
+          channelId={channel.id}
+          className="mt-1 shrink-0 rounded-full border border-line p-2 text-muted transition hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        />
+      </div>
       <Player channel={channel} />
       <NowNext schedule={schedule ?? undefined} className="mt-4 text-sm text-muted" />
       <section className="mt-5 flex items-center gap-3 border-t border-line pt-5">

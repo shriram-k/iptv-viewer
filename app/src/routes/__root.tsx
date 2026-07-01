@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, Link, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { Star } from 'lucide-react'
 
 import appCss from '../styles.css?url'
 
@@ -9,6 +10,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { name: 'theme-color', content: '#1b1720' },
       { title: 'Free Live TV — a clean guide to free-to-air channels' },
       { name: 'description', content: 'Browse and watch free live TV channels by country and category, with what’s on now and next.' },
     ],
@@ -20,6 +22,10 @@ export const Route = createRootRoute({
         href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap',
       },
       { rel: 'stylesheet', href: appCss },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+      { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+      { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/icons/favicon-32.png' },
+      { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon-180.png' },
     ],
   }),
   shellComponent: RootDocument,
@@ -35,10 +41,17 @@ function SiteHeader() {
             Free<span className="text-accent">TV</span>
           </span>
         </Link>
+        <Link
+          to="/favorites"
+          className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:text-accent-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          activeProps={{ className: 'text-accent-ink' }}
+        >
+          <Star className="h-4 w-4" aria-hidden /> Favorites
+        </Link>
         <form
           action="/search"
           method="get"
-          className="ml-auto hidden w-full max-w-xs items-center sm:flex"
+          className="hidden w-full max-w-xs items-center sm:flex"
           role="search"
         >
           <input

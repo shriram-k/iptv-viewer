@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { getStore } from '../data/store'
 import { getChannelIndex } from '../data/kv'
+import { ChannelRail } from '../components/ChannelRail'
+import { useFavorites, useHistory } from '../lib/useEngagement'
 
 export const Route = createFileRoute('/')({
   loader: async () => {
@@ -21,7 +23,7 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-function Rail({ label, children }: { label: string; children: React.ReactNode }) {
+function ChipRail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">{label}</h2>
@@ -33,6 +35,8 @@ function Rail({ label, children }: { label: string; children: React.ReactNode })
 function Home() {
   const { countries, categories, total } = Route.useLoaderData()
   const navigate = useNavigate()
+  const favorites = useFavorites()
+  const history = useHistory()
   return (
     <main className="mx-auto max-w-5xl px-4 sm:px-6">
       {/* Hero */}
@@ -67,11 +71,14 @@ function Home() {
         </form>
       </section>
 
-      {/* Favorites / Recently-watched / Live-now rails render here once their
-          features land (localStorage + EPG); omitted while empty. */}
+      {/* Device-local engagement rails (client-only; self-omit while empty). */}
+      <div className="pt-10">
+        <ChannelRail title="Your favorites" ids={favorites} />
+        <ChannelRail title="Recently watched" ids={history} />
+      </div>
 
       <div className="py-10">
-        <Rail label="Browse by country">
+        <ChipRail label="Browse by country">
           {countries.map((code, i) => (
             <Link
               key={code}
@@ -83,8 +90,8 @@ function Home() {
               {code.toUpperCase()}
             </Link>
           ))}
-        </Rail>
-        <Rail label="Browse by category">
+        </ChipRail>
+        <ChipRail label="Browse by category">
           {categories.map((slug, i) => (
             <Link
               key={slug}
@@ -96,7 +103,7 @@ function Home() {
               {slug}
             </Link>
           ))}
-        </Rail>
+        </ChipRail>
       </div>
     </main>
   )
