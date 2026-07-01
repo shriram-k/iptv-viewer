@@ -18,13 +18,13 @@ export function NowNext({ schedule, className }: { schedule?: Programme[]; class
     <span className={`block truncate ${className ?? 'text-xs text-gray-500'}`} data-testid="now-next">
       {current && (
         <span>
-          <span className="font-medium text-gray-700">Now:</span> {current.title}
+          <span className="font-semibold text-accent-ink">Now:</span> {current.title}
         </span>
       )}
       {current && next && <span aria-hidden> · </span>}
       {next && (
         <span>
-          <span className="font-medium text-gray-700">Next:</span> {next.title}
+          <span className="font-semibold text-ink">Next:</span> {next.title}
         </span>
       )}
     </span>

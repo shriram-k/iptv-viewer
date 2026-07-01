@@ -30,17 +30,20 @@ function CountryPage() {
   }
   const nameById = Object.fromEntries(channels.map((c) => [c.id, c.name]))
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <StructuredData data={itemList} />
-      <nav aria-label="Breadcrumb" className="mb-4 text-sm text-gray-500">
-        <Link to="/" className="hover:underline">Home</Link> <span aria-hidden>/</span> {code.toUpperCase()}
+      <nav aria-label="Breadcrumb" className="mb-5 font-mono text-xs uppercase tracking-wide text-muted">
+        <Link to="/" className="transition hover:text-accent-ink">Home</Link> <span aria-hidden className="text-line">/</span> {code.toUpperCase()}
       </nav>
-      <h1 className="mb-4 text-2xl font-bold">Live TV in {code.toUpperCase()}</h1>
+      <header className="mb-8 flex items-baseline gap-3">
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Live TV in {code.toUpperCase()}</h1>
+        <span className="font-mono text-sm text-muted">{channels.length} channels</span>
+      </header>
       <LiveNowBoard shard={epg} meta={epgMeta} coverage={epgMeta?.coverage[code.toLowerCase()] ?? 0} nameById={nameById} />
       {channels.length === 0 ? (
-        <p className="text-gray-500">No channels found for this country.</p>
+        <p className="rounded-xl border border-line bg-surface p-6 text-muted">No channels found for this country.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="channel-grid">
+        <div className="rise-in grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="channel-grid">
           {channels.map((c) => (
             <ChannelCard key={c.id} channel={c} mode="full" schedule={epg[c.id]} />
           ))}
