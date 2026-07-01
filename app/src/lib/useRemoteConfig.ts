@@ -32,8 +32,12 @@ async function ensureLoaded(): Promise<void> {
       shared = state
       emit()
     }
+    // state === null means RC is off (unconfigured/unsupported) — don't retry.
   } catch {
-    /* offline / throttled / misconfigured → keep defaults; site works */
+    // Transient failure (offline / throttled) → keep defaults but allow a retry
+    // on the next consumer mount (e.g. after a navigation) instead of pinning the
+    // whole session to defaults.
+    started = false
   }
 }
 

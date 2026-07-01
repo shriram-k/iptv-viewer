@@ -42,7 +42,7 @@ export function deriveRcState(raw: RcRaw): RcState {
     .map((c): FeaturedCollection | null => {
       if (!c || typeof c !== 'object') return null
       const { title, channelIds } = c as Record<string, unknown>
-      if (typeof title !== 'string' || !Array.isArray(channelIds)) return null
+      if (typeof title !== 'string' || title.trim() === '' || !Array.isArray(channelIds)) return null
       return { title, channelIds: stringsOf(channelIds) }
     })
     .filter((c): c is FeaturedCollection => c !== null)

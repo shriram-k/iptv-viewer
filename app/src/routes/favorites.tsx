@@ -13,8 +13,9 @@ export const Route = createFileRoute('/favorites')({
 // the favorite IDs, resolve their metadata from the channel index, render a grid.
 function FavoritesPage() {
   const favorites = useFavorites()
-  const { killed } = useRemoteConfig() // hide kill-listed channels (R8)
-  const { channels, loading } = useResolvedChannels(favorites.filter((id) => !killed.has(id)))
+  const { killed } = useRemoteConfig()
+  const { channels: resolved, loading } = useResolvedChannels(favorites) // unfiltered → distinguishes stale vs killed
+  const channels = resolved.filter((c) => !killed.has(c.id)) // hide kill-listed for display (R8)
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -28,9 +29,13 @@ function FavoritesPage() {
         </p>
       ) : loading ? (
         <p className="text-muted">Loading…</p>
-      ) : channels.length === 0 ? (
+      ) : resolved.length === 0 ? (
         <p className="rounded-xl border border-line bg-surface p-6 text-muted" data-testid="favorites-stale">
           Your saved channels are no longer in the catalog.
+        </p>
+      ) : channels.length === 0 ? (
+        <p className="rounded-xl border border-line bg-surface p-6 text-muted" data-testid="favorites-unavailable">
+          Your favorites are temporarily unavailable.
         </p>
       ) : (
         <div className="rise-in grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="favorites-grid">

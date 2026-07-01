@@ -77,8 +77,8 @@ function Home() {
       <div className="pt-10">
         <ChannelRail title="Your favorites" ids={favorites} />
         <ChannelRail title="Recently watched" ids={history} />
-        {collections.map((c) => (
-          <ChannelRail key={c.title} title={c.title} ids={c.channelIds} />
+        {collections.map((c, i) => (
+          <ChannelRail key={`featured-${i}`} title={c.title} ids={c.channelIds} />
         ))}
       </div>
 

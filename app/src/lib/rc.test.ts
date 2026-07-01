@@ -33,11 +33,11 @@ describe('deriveRcState', () => {
     expect([...s.killed].sort()).toEqual(['x', 'y'])
   })
 
-  it('drops malformed collection entries (missing title / bad channelIds)', () => {
+  it('drops malformed collection entries (missing/empty title, bad channelIds)', () => {
     const s = deriveRcState({
-      featured_collections: '[{"title":"Good","channelIds":["a"]},{"channelIds":["b"]},{"title":"NoIds"},{"title":"BadIds","channelIds":"x"}]',
+      featured_collections: '[{"title":"Good","channelIds":["a"]},{"channelIds":["b"]},{"title":"NoIds"},{"title":"BadIds","channelIds":"x"},{"title":"  ","channelIds":["c"]}]',
     })
-    expect(s.collections).toEqual([{ title: 'Good', channelIds: ['a'] }])
+    expect(s.collections).toEqual([{ title: 'Good', channelIds: ['a'] }]) // empty/whitespace title also dropped
   })
 
   it('ignores non-string entries inside the kill-list and channelIds', () => {

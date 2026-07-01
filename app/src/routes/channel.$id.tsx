@@ -58,7 +58,9 @@ function ChannelPage() {
   // Mobile: player above the fold (rendered before the metadata block).
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <StructuredData data={videoObject} />
+      {/* Don't advertise a killed channel as a watchable VideoObject once RC resolves
+          (client-side; SSR still emits it until the pipeline removes the channel — R8). */}
+      {!isKilled && <StructuredData data={videoObject} />}
       <nav aria-label="Breadcrumb" className="mb-4 font-mono text-xs uppercase tracking-wide text-muted">
         <Link to="/" className="transition hover:text-accent-ink">Home</Link>
         {channel.country && (
