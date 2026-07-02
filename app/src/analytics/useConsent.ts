@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import { createClientOnlyFn } from '@tanstack/react-start'
-import { createConsentStore, type ConsentStatus, type ConsentStore } from './consent'
+import { createConsentStore, CONSENT_KEY, type ConsentStatus, type ConsentStore } from './consent'
 
 // Client-only analytics-consent hook. Mounted-gate: returns 'unset' on the server and
 // first paint (so SSR HTML matches — no hydration mismatch), then the real stored value
 // after mount. A module-shared singleton store keeps the banner and the analytics mount
 // in sync. Granting loads GA immediately; GA is never loaded before a grant (Basic
 // Consent Mode → zero collection on decline). Mirrors useRemoteConfig / useEngagement.
-
-const CONSENT_KEY = 'ftv:consent:v1'
 
 // createClientOnlyFn marks this browser-only: the GA-script loader (gtag.client) is
 // reached solely via dynamic import here, so it never enters the SSR worker bundle.
@@ -18,13 +16,12 @@ const loadGtagClient = createClientOnlyFn(async () => {
 })
 
 let store: ConsentStore | null = null
-let storeInit = false
 function getStore(): ConsentStore | null {
   if (typeof window === 'undefined') return null
-  if (storeInit) return store
-  storeInit = true
+  if (store) return store
   try {
     store = createConsentStore(window.localStorage)
+    // App-lifetime cross-tab sync — added once, on the singleton's creation.
     window.addEventListener('storage', (e) => {
       if (e.key === CONSENT_KEY) store?.syncFromStorage()
     })

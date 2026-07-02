@@ -40,7 +40,9 @@ function ChannelPage() {
       recordWatched(channel.id)
       trackChannelOpen(channel)
     }
-  }, [channel, isKilled])
+    // channel is invariant per id within the page; key on id so a refetch can't re-fire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel.id, isKilled])
   // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
   // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),
   // so the request-time `now` used to drop past programmes isn't hydration-diffed.

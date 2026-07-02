@@ -10,11 +10,6 @@
 
 type GtagWindow = Window & { gtag?: (...args: unknown[]) => void }
 
-/** True once GA has been loaded (consent granted + a measurement id present). */
-export function isGtagLoaded(): boolean {
-  return typeof window !== 'undefined' && typeof (window as GtagWindow).gtag === 'function'
-}
-
 /** Emit a GA4 event. No-op until GA is loaded (i.e. before consent) — safe to call anywhere. */
 export function track(name: string, params?: Record<string, unknown>): void {
   if (typeof window === 'undefined') return

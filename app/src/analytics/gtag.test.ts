@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { track, isGtagLoaded } from './gtag'
+import { track } from './gtag'
 
 type W = Window & { dataLayer?: unknown[]; gtag?: (...a: unknown[]) => void }
 
@@ -9,8 +9,8 @@ afterEach(() => {
 })
 
 describe('track', () => {
-  it('reports not-loaded and no-ops before GA is loaded (no consent) without throwing', () => {
-    expect(isGtagLoaded()).toBe(false)
+  it('no-ops before GA is loaded (no consent) without throwing', () => {
+    expect((window as W).gtag).toBeUndefined()
     expect(() => track('channel_open', { channel_id: 'x' })).not.toThrow()
   })
 
@@ -22,7 +22,6 @@ describe('track', () => {
       dataLayer.push(arguments)
     } as (...a: unknown[]) => void
 
-    expect(isGtagLoaded()).toBe(true)
     track('channel_open', { channel_id: 'BBCNews.uk' })
     const calls = dataLayer.map((a) => Array.from(a as ArrayLike<unknown>))
     const event = calls.find((c) => c[0] === 'event' && c[1] === 'channel_open')

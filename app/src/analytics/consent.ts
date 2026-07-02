@@ -8,7 +8,7 @@
 // cross-tab changes come in via the `storage` event → syncFromStorage(). Mirrors
 // src/lib/engagement.ts.
 
-const CONSENT_KEY = 'ftv:consent:v1' // versioned so a future shape change resets cleanly
+export const CONSENT_KEY = 'ftv:consent:v1' // versioned so a future shape change resets cleanly
 
 export type ConsentStatus = 'unset' | 'granted' | 'denied'
 
