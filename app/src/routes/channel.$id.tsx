@@ -1,6 +1,5 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
-import { getStore } from '../data/store'
-import { getChannel, getEpgShard } from '../data/kv'
+import { fetchChannelData } from '../data/server'
 import { Player } from '../components/Player'
 import { StructuredData } from '../components/StructuredData'
 import { useEffect } from 'react'
@@ -13,13 +12,9 @@ import { broadcastEvents } from '../lib/jsonld'
 
 export const Route = createFileRoute('/channel/$id')({
   loader: async ({ params }) => {
-    const store = getStore()
-    const channel = await getChannel(store, params.id)
-    if (!channel) throw notFound()
-    // EPG schedule (absolute UTC times) fetched server-side; now/next is computed
-    // client-side. Absent country/coverage → empty → labels silently omitted.
-    const schedule = channel.country ? (await getEpgShard(store, channel.country))[channel.id] : undefined
-    return { channel, schedule: schedule ?? null }
+    const data = await fetchChannelData({ data: params.id })
+    if (!data.channel) throw notFound()
+    return { channel: data.channel, schedule: data.schedule }
   },
   head: ({ loaderData }) => ({
     meta: [{ title: loaderData ? `${loaderData.channel.name} — watch live` : 'Channel' }],
