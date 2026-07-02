@@ -228,4 +228,24 @@ describe('Player analytics (U5)', () => {
     unmount()
     expect(trackWatchDuration).toHaveBeenCalledWith(expect.objectContaining({ id: 'x' }), expect.any(Number))
   })
+
+  it('emits watch_duration on tab-close (pagehide), exactly once even if unmount follows', async () => {
+    const { unmount } = render(<Player channel={channel([stream('https://x/only.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    hlsMock.instances[0].emit('hlsManifestParsed')
+    fireEvent.canPlay(video())
+    await waitFor(() => expect(trackPlaySuccess).toHaveBeenCalled())
+    window.dispatchEvent(new Event('pagehide'))
+    unmount()
+    expect(trackWatchDuration).toHaveBeenCalledTimes(1) // deduped across pagehide + teardown
+  })
+
+  it('does not emit watch_duration when the stream never played', async () => {
+    const { unmount } = render(<Player channel={channel([stream('https://x/only.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    hlsMock.instances[0].emit('hlsError', { fatal: true, type: 'networkError', details: 'manifestLoadError', response: { code: 410 } })
+    await waitFor(() => expect(trackStreamError).toHaveBeenCalled())
+    unmount()
+    expect(trackWatchDuration).not.toHaveBeenCalled()
+  })
 })

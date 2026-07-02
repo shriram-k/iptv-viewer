@@ -41,8 +41,9 @@ export function trackStreamError(channel: Channel, failureClass: FailureClass): 
 
 /** How long a channel was watched (seconds), emitted on teardown. */
 export function trackWatchDuration(channel: Channel, seconds: number): void {
-  if (seconds <= 0) return
-  track('watch_duration', { ...channelDims(channel), seconds: Math.round(seconds) })
+  const rounded = Math.round(seconds)
+  if (rounded <= 0) return // round first, so a sub-second play doesn't emit seconds:0
+  track('watch_duration', { ...channelDims(channel), seconds: rounded })
 }
 
 /** A search was performed. `search_term` is aggregate search intent — never an identifier. */

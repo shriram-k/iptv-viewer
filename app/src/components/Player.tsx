@@ -85,6 +85,14 @@ export function Player({ channel }: { channel: Channel }) {
     let cancelled = false
     const startedAt = performance.now() // for time-to-first-frame + watch duration
     let playStart = 0 // set once playing; 0 means "never played"
+    let watchEmitted = false
+    // Emit watch_duration exactly once — from whichever comes first: in-app teardown
+    // (nav/retry/unmount) or `pagehide` (tab close / bfcache, where React cleanup won't run).
+    const emitWatch = () => {
+      if (!playStart || watchEmitted) return
+      watchEmitted = true
+      trackWatchDuration(channel, (performance.now() - playStart) / 1000)
+    }
 
     setStatus('loading')
     setMuted(true)
@@ -223,6 +231,7 @@ export function Player({ channel }: { channel: Channel }) {
     video.addEventListener('canplay', markPlaying)
     video.addEventListener('playing', markPlaying)
     video.addEventListener('error', onNativeError)
+    window.addEventListener('pagehide', emitWatch)
 
     attempt()
 
@@ -232,8 +241,9 @@ export function Player({ channel }: { channel: Channel }) {
       video.removeEventListener('canplay', markPlaying)
       video.removeEventListener('playing', markPlaying)
       video.removeEventListener('error', onNativeError)
+      window.removeEventListener('pagehide', emitWatch)
       teardownHls()
-      if (playStart) trackWatchDuration(channel, (performance.now() - playStart) / 1000)
+      emitWatch()
     }
     // streams/hasStreams are invariant for a given channel.id; depending on the
     // streams array ref would tear down and rebuild the player on any re-render.

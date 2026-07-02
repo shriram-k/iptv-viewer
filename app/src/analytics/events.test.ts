@@ -51,11 +51,13 @@ describe('event emitters', () => {
     expect(mockTrack).toHaveBeenCalledWith('stream_error', expect.objectContaining({ failure_class: 'region-restricted' }))
   })
 
-  it('trackWatchDuration sends rounded seconds, and skips non-positive durations', () => {
+  it('trackWatchDuration rounds seconds, and skips non-positive AND sub-second durations', () => {
     trackWatchDuration(channel(), 42.4)
     expect(mockTrack).toHaveBeenCalledWith('watch_duration', expect.objectContaining({ seconds: 42 }))
     mockTrack.mockClear()
     trackWatchDuration(channel(), 0)
+    expect(mockTrack).not.toHaveBeenCalled()
+    trackWatchDuration(channel(), 0.4) // rounds to 0 → must not emit seconds:0
     expect(mockTrack).not.toHaveBeenCalled()
   })
 
