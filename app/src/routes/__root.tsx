@@ -3,7 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Star } from 'lucide-react'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
-import { Analytics } from '../components/Analytics.client'
+import { Analytics } from '../components/Analytics'
 import { ConsentBanner } from '../components/ConsentBanner'
 
 import appCss from '../styles.css?url'
