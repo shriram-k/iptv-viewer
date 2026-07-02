@@ -3,6 +3,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Star } from 'lucide-react'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
+import { Analytics } from '../components/Analytics'
+import { ConsentBanner } from '../components/ConsentBanner'
 
 import appCss from '../styles.css?url'
 
@@ -93,6 +95,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <SiteHeader />
         <div className="flex-1">{children}</div>
         <SiteFooter />
+        <ConsentBanner />
+        <Analytics />
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
           plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}

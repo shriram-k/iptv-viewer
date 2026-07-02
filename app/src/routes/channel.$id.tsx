@@ -7,6 +7,7 @@ import { LivenessHint } from '../components/LivenessHint'
 import { NowNext } from '../components/NowNext'
 import { FavoriteButton } from '../components/FavoriteButton'
 import { recordWatched } from '../lib/useEngagement'
+import { trackChannelOpen } from '../analytics/events'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
 import { broadcastEvents } from '../lib/jsonld'
 
@@ -32,10 +33,15 @@ function ChannelPage() {
   const { channel, schedule } = Route.useLoaderData()
   const { killed } = useRemoteConfig()
   const isKilled = killed.has(channel.id) // maintainer kill-switch (R8) — hide playback
-  // Opening a channel page counts as a watch (recently-watched, client-only) — but
-  // not a kill-switched one.
+  // Opening a channel page counts as a watch (recently-watched, client-only) and an
+  // aggregate analytics channel_open — but not for a kill-switched channel.
   useEffect(() => {
-    if (!isKilled) recordWatched(channel.id)
+    if (!isKilled) {
+      recordWatched(channel.id)
+      trackChannelOpen(channel)
+    }
+    // channel is invariant per id within the page; key on id so a refetch can't re-fire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel.id, isKilled])
   // Absolute-UTC BroadcastEvents for the current + upcoming schedule (R9), else a
   // single generic live event. Emitted via a JSON-LD script (dangerouslySetInnerHTML),

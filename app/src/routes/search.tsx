@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { fetchSearchData } from '../data/server'
 import { useRemoteConfig } from '../lib/useRemoteConfig'
+import { trackSearch } from '../analytics/events'
 
 export const Route = createFileRoute('/search')({
   validateSearch: (search: Record<string, unknown>) => ({ q: String(search.q ?? '') }),
@@ -14,6 +16,9 @@ function SearchPage() {
   const { q, channels: allChannels, countries, categories } = Route.useLoaderData()
   const { killed } = useRemoteConfig() // hide kill-listed channels (R8)
   const channels = allChannels.filter((c) => !killed.has(c.id))
+  useEffect(() => {
+    if (q) trackSearch(q) // aggregate search intent (no-op until consent)
+  }, [q])
   const empty = channels.length === 0 && countries.length === 0 && categories.length === 0
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
