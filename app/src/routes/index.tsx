@@ -3,6 +3,7 @@ import { getStore } from '../data/store'
 import { getChannelIndex } from '../data/kv'
 import { ChannelRail } from '../components/ChannelRail'
 import { useFavorites, useHistory } from '../lib/useEngagement'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/')({
   loader: async () => {
@@ -37,6 +38,7 @@ function Home() {
   const navigate = useNavigate()
   const favorites = useFavorites()
   const history = useHistory()
+  const { collections } = useRemoteConfig() // maintainer-featured rails (R7)
   return (
     <main className="mx-auto max-w-5xl px-4 sm:px-6">
       {/* Hero */}
@@ -71,10 +73,13 @@ function Home() {
         </form>
       </section>
 
-      {/* Device-local engagement rails (client-only; self-omit while empty). */}
+      {/* Device-local engagement + maintainer-featured rails (client-only; self-omit while empty). */}
       <div className="pt-10">
         <ChannelRail title="Your favorites" ids={favorites} />
         <ChannelRail title="Recently watched" ids={history} />
+        {collections.map((c, i) => (
+          <ChannelRail key={`featured-${i}`} title={c.title} ids={c.channelIds} />
+        ))}
       </div>
 
       <div className="py-10">

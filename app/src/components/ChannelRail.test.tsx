@@ -10,8 +10,13 @@ vi.mock('../data/kv', () => ({
     'NDTV.in': { country: 'in', categories: ['news'], name: 'NDTV 24x7' },
   }),
 }))
+const rc = vi.hoisted(() => ({ killed: new Set<string>() }))
+vi.mock('../lib/useRemoteConfig', () => ({ useRemoteConfig: () => ({ announcement: '', killed: rc.killed, collections: [] }) }))
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  rc.killed = new Set()
+})
 afterEach(cleanup)
 
 describe('ChannelRail', () => {
@@ -33,5 +38,12 @@ describe('ChannelRail', () => {
     await waitFor(() => expect(screen.getByText('BBC News')).toBeTruthy())
     expect(screen.queryByText('Ghost.zz')).toBeNull()
     expect(screen.getAllByTestId('channel-card')).toHaveLength(1)
+  })
+
+  it('filters out Remote Config kill-listed channels', async () => {
+    rc.killed = new Set(['BBCNews.uk'])
+    render(<ChannelRail title="Your favorites" ids={['BBCNews.uk', 'NDTV.in']} />)
+    await waitFor(() => expect(screen.getByText('NDTV 24x7')).toBeTruthy())
+    expect(screen.queryByText('BBC News')).toBeNull() // kill-listed → hidden
   })
 })

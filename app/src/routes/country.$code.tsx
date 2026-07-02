@@ -4,6 +4,7 @@ import { getCountry, getEpgShard, getEpgMeta } from '../data/kv'
 import { ChannelCard } from '../components/ChannelCard'
 import { LiveNowBoard } from '../components/LiveNowBoard'
 import { StructuredData } from '../components/StructuredData'
+import { useRemoteConfig } from '../lib/useRemoteConfig'
 
 export const Route = createFileRoute('/country/$code')({
   loader: async ({ params }) => {
@@ -22,7 +23,9 @@ export const Route = createFileRoute('/country/$code')({
 })
 
 function CountryPage() {
-  const { code, channels, epg, epgMeta } = Route.useLoaderData()
+  const { code, channels: allChannels, epg, epgMeta } = Route.useLoaderData()
+  const { killed } = useRemoteConfig() // client-side: hide kill-listed channels (R8)
+  const channels = allChannels.filter((c) => !killed.has(c.id))
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
