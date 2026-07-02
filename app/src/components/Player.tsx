@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Channel } from '../data/types'
 import { buildCandidates, classifyFailure, dominantClass, messageFor } from '../lib/playback'
 import type { FailureClass } from '../lib/playback'
+import { trackStreamPlay, trackPlaySuccess, trackStreamError, trackWatchDuration } from '../analytics/events'
 
 // Full-playback player (pure linker — never proxies bytes). Walks the channel's
 // ordered stream URLs, failing over silently on fatal hls.js errors, and when
@@ -82,9 +83,12 @@ export function Player({ channel }: { channel: Channel }) {
     let hls: HlsInstance | undefined
     let deadline: ReturnType<typeof setTimeout> | undefined
     let cancelled = false
+    const startedAt = performance.now() // for time-to-first-frame + watch duration
+    let playStart = 0 // set once playing; 0 means "never played"
 
     setStatus('loading')
     setMuted(true)
+    trackStreamPlay(channel) // play attempt (analytics no-op until consent)
 
     const clearDeadline = () => {
       if (deadline) clearTimeout(deadline)
@@ -127,8 +131,10 @@ export function Player({ channel }: { channel: Channel }) {
       if (idx < candidates.length) {
         attempt()
       } else {
-        setFailureClass(dominantClass(attempts))
+        const cls = dominantClass(attempts)
+        setFailureClass(cls)
         setStatus('failed')
+        trackStreamError(channel, cls) // terminal failure (all candidates exhausted)
       }
     }
     // The current attempt produced a usable stream — stop here (terminal success).
@@ -137,6 +143,8 @@ export function Player({ channel }: { channel: Channel }) {
       settled = true
       clearDeadline()
       setStatus('playing')
+      playStart = performance.now()
+      trackPlaySuccess(channel, playStart - startedAt) // time-to-first-frame
     }
     // The current attempt failed — record the class and fail over.
     const fail = (cls: FailureClass) => {
@@ -225,6 +233,7 @@ export function Player({ channel }: { channel: Channel }) {
       video.removeEventListener('playing', markPlaying)
       video.removeEventListener('error', onNativeError)
       teardownHls()
+      if (playStart) trackWatchDuration(channel, (performance.now() - playStart) / 1000)
     }
     // streams/hasStreams are invariant for a given channel.id; depending on the
     // streams array ref would tear down and rebuild the player on any re-render.

@@ -40,6 +40,16 @@ const hlsMock = vi.hoisted(() => {
 })
 vi.mock('hls.js', () => ({ default: hlsMock.FakeHls }))
 
+// Analytics emitters are mocked so we can assert the player fires them on lifecycle
+// transitions (the real ones no-op until consent, so unmocked tests are unaffected).
+vi.mock('../analytics/events', () => ({
+  trackStreamPlay: vi.fn(),
+  trackPlaySuccess: vi.fn(),
+  trackStreamError: vi.fn(),
+  trackWatchDuration: vi.fn(),
+}))
+import { trackStreamPlay, trackPlaySuccess, trackStreamError, trackWatchDuration } from '../analytics/events'
+
 function stream(url: string, overrides: Partial<Stream> = {}): Stream {
   const scheme = url.startsWith('https') ? 'https' : 'http'
   return { url, status: 'online', checkedAt: null, scheme, likelyPlayable: true, quality: null, ...overrides }
@@ -172,5 +182,50 @@ describe('Player', () => {
     hlsMock.FakeHls.isSupported.mockReturnValue(false)
     render(<Player channel={channel([stream('https://x/only.m3u8')])} />)
     await waitFor(() => expect(screen.getByTestId('player-error')).toBeTruthy())
+  })
+})
+
+describe('Player analytics (U5)', () => {
+  beforeEach(() => {
+    vi.mocked(trackStreamPlay).mockClear()
+    vi.mocked(trackPlaySuccess).mockClear()
+    vi.mocked(trackStreamError).mockClear()
+    vi.mocked(trackWatchDuration).mockClear()
+  })
+
+  it('emits a play attempt on mount', async () => {
+    render(<Player channel={channel([stream('https://x/y.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    expect(trackStreamPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 'x' }))
+  })
+
+  it('emits play_success with a first-frame time once playing', async () => {
+    render(<Player channel={channel([stream('https://x/y.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    hlsMock.instances[0].emit('hlsManifestParsed')
+    fireEvent.canPlay(video())
+    await waitFor(() => expect(trackPlaySuccess).toHaveBeenCalled())
+    const [, firstFrameMs] = vi.mocked(trackPlaySuccess).mock.calls[0]
+    expect(typeof firstFrameMs).toBe('number')
+  })
+
+  it('Covers AE1 — a play that then errors emits stream_play and a classified stream_error', async () => {
+    render(<Player channel={channel([stream('https://x/only.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    hlsMock.instances[0].emit('hlsError', { fatal: true, type: 'networkError', details: 'manifestLoadError', response: { code: 403 } })
+    await waitFor(() => expect(trackStreamError).toHaveBeenCalled())
+    expect(trackStreamPlay).toHaveBeenCalled()
+    const [, failureClass] = vi.mocked(trackStreamError).mock.calls[0]
+    expect(failureClass).toBe('region-restricted')
+  })
+
+  it('emits watch_duration on unmount after playing', async () => {
+    const { unmount } = render(<Player channel={channel([stream('https://x/only.m3u8')])} />)
+    await waitFor(() => expect(hlsMock.instances).toHaveLength(1))
+    hlsMock.instances[0].emit('hlsManifestParsed')
+    fireEvent.canPlay(video())
+    await waitFor(() => expect(trackPlaySuccess).toHaveBeenCalled())
+    unmount()
+    expect(trackWatchDuration).toHaveBeenCalledWith(expect.objectContaining({ id: 'x' }), expect.any(Number))
   })
 })
