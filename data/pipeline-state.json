@@ -1,0 +1,11 @@
+{
+  "version": 1783006292409,
+  "stats": {
+    "input": 9986,
+    "kept": 9973,
+    "droppedNsfw": 4,
+    "droppedKeyword": 4,
+    "droppedBlocklist": 0,
+    "droppedDead": 5
+  }
+}
