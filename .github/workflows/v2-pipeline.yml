@@ -23,6 +23,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The diff baseline (last published snapshot) lives on the machine-owned,
+      # unprotected `pipeline-state` branch — NOT master, which stays PR-protected and
+      # free of daily machine commits. Restore it into the working tree so the pipeline
+      # can diff the fresh snapshot against what's currently live.
+      - name: Restore snapshot baseline from pipeline-state
+        run: |
+          if git fetch origin pipeline-state 2>/dev/null; then
+            git checkout FETCH_HEAD -- data/ 2>/dev/null && echo "baseline restored from pipeline-state" \
+              || echo "pipeline-state has no data/ yet"
+          else
+            echo "no pipeline-state branch yet — first run, empty baseline"
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,26 +53,19 @@ jobs:
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
         run: npm run pipeline
 
-      # Normal / fast-pathed diff → auto-commit the snapshot to the default branch
-      # (KV was already published by the pipeline step). origin R6/R12.
-      - name: Commit snapshot (normal)
+      # Normal / fast-pathed diff → persist the refreshed snapshot as the new baseline
+      # on the unprotected `pipeline-state` branch (KV was already published above).
+      # master is never written to, so its PR protection is fully preserved. origin R6/R12.
+      - name: Persist snapshot baseline to pipeline-state
         if: steps.pipeline.outputs.action == 'published'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/snapshot data/pipeline-state.json
-          if git diff-index --quiet HEAD --; then
-            echo "No snapshot changes."
-          else
-            git commit -m "chore(pipeline): daily snapshot refresh"
-            # The repo receives other automated commits; rebase + retry so a
-            # non-fast-forward push doesn't leave KV ahead of the committed baseline.
-            for attempt in 1 2 3; do
-              git pull --rebase --autostash origin "$(git rev-parse --abbrev-ref HEAD)" || true
-              if git push; then break; fi
-              echo "push attempt $attempt failed; retrying"; sleep 5
-            done
-          fi
+          # data/ is untracked on master; stage the fresh snapshot explicitly and
+          # force-push it as the sole content of the machine-owned pipeline-state branch.
+          git add -f data/snapshot data/pipeline-state.json
+          git commit -m "chore(pipeline): snapshot baseline refresh"
+          git push --force origin HEAD:refs/heads/pipeline-state
 
       # Anomaly diff → open a review PR; do NOT publish (prior snapshot stays live).
       # origin R7.
