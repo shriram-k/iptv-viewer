@@ -7,7 +7,8 @@ import { fixtureStore } from './fixture'
 
 export interface AppEnv {
   // Cloudflare KV binding the pipeline publishes to (wrangler.jsonc SNAPSHOT_KV).
-  SNAPSHOT_KV?: { get(key: string): Promise<string | null> }
+  // `get` takes an options bag so reads can pass `cacheTtl` (edge-cache the read).
+  SNAPSHOT_KV?: { get(key: string, options?: { cacheTtl?: number }): Promise<string | null> }
 }
 
 export function getStore(env?: AppEnv): SnapshotStore {

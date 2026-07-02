@@ -4,7 +4,7 @@
 // output — run `npm run cf-typegen` for the full generated Cloudflare runtime types.
 declare module 'cloudflare:workers' {
   export const env: {
-    SNAPSHOT_KV?: { get(key: string): Promise<string | null> }
+    SNAPSHOT_KV?: { get(key: string, options?: { cacheTtl?: number }): Promise<string | null> }
     [key: string]: unknown
   }
 }
