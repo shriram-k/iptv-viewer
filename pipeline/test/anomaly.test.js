@@ -101,6 +101,29 @@ test('R4: playability gate skipped below the minKept floor', () => {
   assert.equal(res.anomalous, false);
 });
 
+test('R4: a small/degraded baseline (below minKept) is too noisy to drive the gate', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 2000, keptPlayable: 1000 }, // full run, 50%
+    baselineStats: { kept: 100, keptPlayable: 95 }, // tiny 95% baseline — must not gate
+  });
+  assert.equal(res.anomalous, false);
+});
+
+test('R4: a minKept override to 0 with an empty candidate does not NaN or mis-gate', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 0, keptPlayable: 0 },
+    baselineStats: { kept: 2000, keptPlayable: 1800 },
+    thresholds: { minKept: 0 }, // floored to 1 → cand.kept 0 < 1 → gate skipped, no NaN
+  });
+  assert.equal(res.anomalous, false);
+});
+
 test('per-country gate ignores tiny countries (min-baseline floor)', () => {
   const baseline = [...catalog(1000, 'US'), ...catalog(2, 'IN')]; // IN tiny
   const candidate = catalog(1000, 'US'); // IN's 2 channels gone (100%)
