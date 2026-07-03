@@ -31,4 +31,23 @@ describe('buildSitemap', () => {
     expect(xml).toContain('<loc>https://x/</loc>')
     expect(xml).toContain('</urlset>')
   })
+
+  it('emits priority tiers: home 1.0, country/category hubs 0.8, channels 0.5', () => {
+    const xml = buildSitemap('https://x', index)
+    expect(xml).toContain('<loc>https://x/</loc><priority>1.0</priority>')
+    expect(xml).toMatch(/\/country\/gb<\/loc><priority>0\.8<\/priority>/)
+    expect(xml).toMatch(/\/category\/news<\/loc><priority>0\.8<\/priority>/)
+    expect(xml).toMatch(/\/channel\/BBCNews\.uk<\/loc><priority>0\.5<\/priority>/)
+  })
+
+  it('emits a date-only lastmod when a valid generatedAt is passed', () => {
+    const xml = buildSitemap('https://x', index, '2026-07-03T04:00:00.000Z')
+    expect(xml).toContain('<lastmod>2026-07-03</lastmod>')
+    expect(xml).not.toContain('T04:00') // date only, not the full timestamp
+  })
+
+  it('omits lastmod when the date is missing or malformed', () => {
+    expect(buildSitemap('https://x', index)).not.toContain('<lastmod>')
+    expect(buildSitemap('https://x', index, 'not-a-date')).not.toContain('<lastmod>')
+  })
 })
