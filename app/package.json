@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "VITE_GA4_MEASUREMENT_ID=G-VRE57YMEBH npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
