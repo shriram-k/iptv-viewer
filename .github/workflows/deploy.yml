@@ -37,9 +37,11 @@ jobs:
 
       - name: Build & deploy to Cloudflare
         env:
-          # A Cloudflare API token with the "Edit Cloudflare Workers" permissions
-          # (Workers Scripts:Edit + Workers KV Storage:Edit + Account:Read), and the
-          # account id — wrangler reads both from the environment.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler reads CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from the env.
+          # Reuse the existing pipeline secrets (CF_API_TOKEN / CF_ACCOUNT_ID) so no new
+          # secret is needed — but CF_API_TOKEN must carry the "Edit Cloudflare Workers"
+          # permissions (Workers Scripts:Edit + Workers KV Storage:Edit + Account:Read),
+          # which is broader than the KV-only scope the daily pipeline needs.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: npm run deploy
