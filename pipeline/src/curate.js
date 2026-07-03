@@ -36,6 +36,7 @@ function curate(records, opts = {}) {
   const stats = {
     input: records.length,
     kept: 0,
+    keptPlayable: 0, // kept channels with a browser-playable stream (R4 gate baseline)
     droppedNsfw: 0,
     droppedKeyword: 0,
     droppedBlocklist: 0,
@@ -85,6 +86,7 @@ function curate(records, opts = {}) {
   }
 
   stats.kept = kept.length;
+  stats.keptPlayable = kept.reduce((n, r) => n + (r.playable === true ? 1 : 0), 0);
   return { kept, stats, droppedFilterIds };
 }
 

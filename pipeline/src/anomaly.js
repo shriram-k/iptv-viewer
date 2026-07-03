@@ -18,6 +18,8 @@ const DEFAULT_THRESHOLDS = {
   minCountryBaseline: 10, // ignore tiny countries in the per-country gate
   minFirstRunChannels: 1000, // first-run sanity floor (live catalog is ~9.8k)
   minFirstRunCountries: 20,
+  playableDrop: 0.2, // absolute drop in playable-share vs baseline that trips the gate (R4)
+  minKept: 1000, // don't apply the playability gate below this kept-count (small-run floor)
 };
 
 /**
@@ -74,6 +76,23 @@ function classifyAnomaly({ diff, droppedFilterIds, candidateStats, baselineStats
   const cand = candidateStats || { droppedNsfw: 0 };
   if (base.droppedNsfw >= 20 && cand.droppedNsfw < base.droppedNsfw * 0.2) {
     reasons.push(`nsfw-detection-collapse ${cand.droppedNsfw} vs ${base.droppedNsfw}`);
+  }
+
+  // Playability-regression gate (R4/R16): a mass https→http (or dead) flip that keeps
+  // channel *identity* unchanged slips past the removal gates but leaves the catalog
+  // unplayable. Trip when the playable share drops materially vs the baseline share.
+  // Skipped when the baseline predates this stat (migration boundary) or on small runs.
+  if (
+    typeof cand.keptPlayable === 'number' &&
+    typeof base.keptPlayable === 'number' &&
+    base.kept > 0 &&
+    cand.kept >= t.minKept
+  ) {
+    const candShare = cand.keptPlayable / cand.kept;
+    const baseShare = base.keptPlayable / base.kept;
+    if (baseShare - candShare >= t.playableDrop) {
+      reasons.push(`playability-regression ${(candShare * 100).toFixed(0)}% vs ${(baseShare * 100).toFixed(0)}%`);
+    }
   }
 
   return { anomalous: reasons.length > 0, reasons, fastPathedRemovals };
