@@ -25,7 +25,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # 22.15+ required: the Vite build loads @cloudflare/vite-plugin, which uses
+          # module.registerHooks() (added in Node 22.15 / 23.5). Node 20 fails the build.
+          node-version: '22'
 
       - name: Install dependencies
         run: npm ci
