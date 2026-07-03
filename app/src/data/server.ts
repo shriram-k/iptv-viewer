@@ -6,7 +6,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { getStore, type AppEnv } from './store'
-import { getCategory, getChannel, getChannelIndex, getCountry, getEpgMeta, getEpgShard } from './kv'
+import { getCategory, getChannel, getChannelIndex, getCountry, getEpgMeta, getEpgShard, getMeta } from './kv'
 import type { ChannelIndex, EpgShard } from './types'
 
 // getStore ignores env under `vite dev` (returns the fixture); in the built Worker
@@ -29,7 +29,12 @@ export const fetchHomeData = createServerFn({ method: 'GET' }).handler(async () 
   return { ...deriveFacets(index), total: Object.keys(index).length }
 })
 
-export const fetchChannelIndex = createServerFn({ method: 'GET' }).handler(async () => getChannelIndex(store()))
+/** Channel index + snapshot date, for the sitemap route (server-only). */
+export const fetchSitemapData = createServerFn({ method: 'GET' }).handler(async () => {
+  const s = store()
+  const [index, meta] = await Promise.all([getChannelIndex(s), getMeta(s)])
+  return { index, lastmod: meta?.generatedAt ?? null }
+})
 
 /** Resolve only the requested channel ids → their index entries (small payload for
  *  the client rails, rather than shipping the whole index). */
