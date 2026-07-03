@@ -18,6 +18,8 @@ const DEFAULT_THRESHOLDS = {
   minCountryBaseline: 10, // ignore tiny countries in the per-country gate
   minFirstRunChannels: 1000, // first-run sanity floor (live catalog is ~9.8k)
   minFirstRunCountries: 20,
+  playableDrop: 0.2, // absolute drop in playable-share vs baseline that trips the gate (R4)
+  minKept: 1000, // don't apply the playability gate below this kept-count (small-run floor)
 };
 
 /**
@@ -74,6 +76,31 @@ function classifyAnomaly({ diff, droppedFilterIds, candidateStats, baselineStats
   const cand = candidateStats || { droppedNsfw: 0 };
   if (base.droppedNsfw >= 20 && cand.droppedNsfw < base.droppedNsfw * 0.2) {
     reasons.push(`nsfw-detection-collapse ${cand.droppedNsfw} vs ${base.droppedNsfw}`);
+  }
+
+  // Playability-regression gate (R4/R16): a mass https→http (or online→dead) flip that
+  // keeps channel *identity* unchanged slips past the removal gates but leaves the catalog
+  // unplayable. Trip when the playable share drops materially vs the baseline share. BOTH
+  // denominators must clear the floor — a small/degraded baseline is too noisy to gate
+  // against — and the floor is >=1 so the shares can never divide by zero (even if minKept
+  // is overridden low). Skipped when the baseline predates this stat (migration boundary).
+  //
+  // Note: keptPlayable is the enrich-time scheme+status hint (likelyPlayable = https && !dead),
+  // so this catches the scheme/status regression class R4 targets. Streams that stay
+  // https+online but fail in-browser (CORS/DRM/geo) are invisible here — that deeper
+  // playability truth is the job of the (deferred) GA read-back loop, not this gate.
+  const minKept = Math.max(1, t.minKept);
+  if (
+    typeof cand.keptPlayable === 'number' &&
+    typeof base.keptPlayable === 'number' &&
+    cand.kept >= minKept &&
+    base.kept >= minKept
+  ) {
+    const candShare = cand.keptPlayable / cand.kept;
+    const baseShare = base.keptPlayable / base.kept;
+    if (baseShare - candShare >= t.playableDrop) {
+      reasons.push(`playability-regression ${(candShare * 100).toFixed(0)}% vs ${(baseShare * 100).toFixed(0)}%`);
+    }
   }
 
   return { anomalous: reasons.length > 0, reasons, fastPathedRemovals };

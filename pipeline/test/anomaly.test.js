@@ -54,6 +54,76 @@ test('net-removal not explained by filtering gates', () => {
   assert.ok(res.reasons.some((r) => r.startsWith('net-removal')));
 });
 
+// R4: a mass playability regression keeps channel IDs identical, so the removal/growth
+// gates see nothing — the playability-share gate is what catches it.
+test('R4 (AE2 extended): same ids but streams flip unplayable → playability-regression gates', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000)); // identical ids: 0 removals
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 2000, keptPlayable: 1000 }, // 50% playable
+    baselineStats: { kept: 2000, keptPlayable: 1800 }, // 90% playable → 40-pt drop
+  });
+  assert.equal(res.anomalous, true);
+  assert.ok(res.reasons.some((r) => r.startsWith('playability-regression')));
+});
+
+test('R4: a small playable-share dip within band does not trip', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 2000, keptPlayable: 1750 }, // 87.5%
+    baselineStats: { kept: 2000, keptPlayable: 1800 }, // 90% → 2.5-pt drop
+  });
+  assert.equal(res.anomalous, false);
+});
+
+test('R4: baseline predating keptPlayable (migration boundary) does not trip', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 2000, keptPlayable: 200 }, // would be a huge drop...
+    baselineStats: { kept: 2000 }, // ...but baseline has no keptPlayable → gate skipped
+  });
+  assert.equal(res.anomalous, false);
+});
+
+test('R4: playability gate skipped below the minKept floor', () => {
+  const diff = computeDiff(catalog(500), catalog(500));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 500, keptPlayable: 100 }, // 20% playable, but only 500 kept
+    baselineStats: { kept: 500, keptPlayable: 480 },
+  });
+  assert.equal(res.anomalous, false);
+});
+
+test('R4: a small/degraded baseline (below minKept) is too noisy to drive the gate', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 2000, keptPlayable: 1000 }, // full run, 50%
+    baselineStats: { kept: 100, keptPlayable: 95 }, // tiny 95% baseline — must not gate
+  });
+  assert.equal(res.anomalous, false);
+});
+
+test('R4: a minKept override to 0 with an empty candidate does not NaN or mis-gate', () => {
+  const diff = computeDiff(catalog(2000), catalog(2000));
+  const res = classifyAnomaly({
+    diff,
+    droppedFilterIds: [],
+    candidateStats: { kept: 0, keptPlayable: 0 },
+    baselineStats: { kept: 2000, keptPlayable: 1800 },
+    thresholds: { minKept: 0 }, // floored to 1 → cand.kept 0 < 1 → gate skipped, no NaN
+  });
+  assert.equal(res.anomalous, false);
+});
+
 test('per-country gate ignores tiny countries (min-baseline floor)', () => {
   const baseline = [...catalog(1000, 'US'), ...catalog(2, 'IN')]; // IN tiny
   const candidate = catalog(1000, 'US'); // IN's 2 channels gone (100%)
