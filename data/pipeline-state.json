@@ -1,0 +1,12 @@
+{
+  "version": 1789408804378,
+  "stats": {
+    "input": 9904,
+    "kept": 9892,
+    "keptPlayable": 8444,
+    "droppedNsfw": 1,
+    "droppedKeyword": 5,
+    "droppedBlocklist": 0,
+    "droppedDead": 6
+  }
+}
